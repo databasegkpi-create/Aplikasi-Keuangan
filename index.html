@@ -114,7 +114,7 @@
         
         <button onclick="openModalSetoran()" class="admin-only bg-brand-600 text-white px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm shadow-brand-500/30 hover:bg-brand-700 transition-all"><i class="fas fa-plus md:mr-1.5"></i> <span class="hidden md:inline">Buat Setoran</span></button>
         <button onclick="handleLogout()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-2" title="Keluar"><i class="fas fa-power-off text-xs"></i></button>
-        <button id="btnInstallApp" onclick="installPWA()" class="hidden admin-only bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-amber-100 transition-all"> <i class="fas fa-download md:mr-1.5"></i> <span class="hidden md:inline">Instal App</span>
+        <button id="btnInstallApp" onclick="installPWA()" class="hidden bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-amber-100 transition-all"> <i class="fas fa-download md:mr-1.5"></i> <span class="hidden md:inline">Instal App</span>
   </button>
       </div>
     </header>
@@ -527,9 +527,18 @@
 
 <!-- ================= SCRIPTS ================= -->
 <script>
-  
+// DEKLARASI VARIABEL GLOBAL (PENTING: Jangan dihapus)
+let masterDataGereja = [];
+const bulanArr = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+let currentRiwayatGereja = [], globalDataPemasukan = [], globalDataPengeluaran = [], globalBelumSetorIDs = [], globalDataRekapDirektori = [];
+let globalDataSemuaMutasi = []; 
+let globalDataPenggajian = [];
+const currentYear = new Date().getFullYear();
+let currentGerejaIdModal = null; 
+const swalColor = '#7c3aed';
+
 // JEMBATAN API GITHUB (POLYFILL) - PARALEL & SUPER CEPAT
-const API_URL = "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec";
+const API_URL = "https://script.google.com/macros/library/d/1gQM5MIh_pR-XXMuh-Aw9_O0ty0P3Va4BLPQ9NAzdM0dDRlHmgQ2axWfn/221";
 
 window.google = {
   script: {
@@ -559,11 +568,10 @@ serverFunctions.forEach(funcName => {
     this._successHandler = null;
     this._failureHandler = null;
 
-    if (API_URL === "MASUKKAN_LINK_WEB_APP_GOOGLE_SCRIPT_ANDA_DISINI" || API_URL.trim() === "") {
+    if (API_URL === "https://script.google.com/macros/library/d/1gQM5MIh_pR-XXMuh-Aw9_O0ty0P3Va4BLPQ9NAzdM0dDRlHmgQ2axWfn/221" || API_URL.trim() === "") {
        Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 
-    // Tembak API secara langsung tanpa antrian (Kecepatan Maksimal)
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -572,7 +580,7 @@ serverFunctions.forEach(funcName => {
     .then(response => response.json())
     .then(data => {
       if (data.error && onFailure) onFailure(data.error);
-      else if (onSuccess) { try { onSuccess(data.result); } catch(e) { console.error(e); } }
+      else if (onSuccess) { try { onSuccess(data.result); } catch(e) { console.error("Error UI:", e); } }
     })
     .catch(err => {
       console.error(err);
@@ -580,7 +588,7 @@ serverFunctions.forEach(funcName => {
     });
   };
 });
-  
+
   function populateTahunDropdown() {
     const selectTahun = document.getElementById("formSetoranTahun");
     if (!selectTahun) return;
@@ -594,24 +602,22 @@ serverFunctions.forEach(funcName => {
     }
     selectTahun.innerHTML = htmlOptions;
   }
-  
-  let masterDataGereja = [];
-  const bulanArr = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-  let currentRiwayatGereja = [], globalDataPemasukan = [], globalDataPengeluaran = [], globalBelumSetorIDs = [], globalDataRekapDirektori = [];
-  const currentYear = new Date().getFullYear();
-  let currentGerejaIdModal = null; 
-  const swalColor = '#7c3aed';
 
   const animatedAlert = (icon, title, text, timer = 1500) => {
     Swal.fire({ icon: icon, title: title, text: text, timer: timer, showConfirmButton: false, showClass: { popup: 'animate__animated animate__zoomIn' }, hideClass: { popup: 'animate__animated animate__zoomOut' } });
   };
 
   function formatUang(angka) { return (!angka || angka === 0 || angka === "0") ? "-" : "Rp " + Number(angka).toLocaleString('id-ID'); }
+  
   function showLoader(msg = "Sinkronisasi Server...", submsg = "Mengambil data terbaru Sinode GKPI") {
     document.getElementById("loaderTitle").innerText = msg; document.getElementById("loaderSub").innerText = submsg;
     document.getElementById("globalLoader").classList.remove("hidden"); document.getElementById("globalLoader").classList.add("flex");
   }
-  function hideLoader() { document.getElementById("globalLoader").classList.add("hidden"); document.getElementById("globalLoader").classList.remove("flex"); }
+  
+  function hideLoader() { 
+      document.getElementById("globalLoader").classList.add("hidden"); 
+      document.getElementById("globalLoader").classList.remove("flex"); 
+  }
 
   function applyRoleUI() {
     const role = sessionStorage.getItem("user_role") || "user";
@@ -639,6 +645,7 @@ serverFunctions.forEach(funcName => {
   });
 
   function refreshDataUtama() { inisialisasiData(); }
+  
   function toggleSidebar() {
     const sidebar = document.getElementById("sidebar"), overlay = document.getElementById("mobileOverlay");
     if(sidebar.classList.contains("-translate-x-full")) { sidebar.classList.remove("-translate-x-full"); overlay.classList.remove("hidden"); } 
@@ -684,7 +691,6 @@ serverFunctions.forEach(funcName => {
       document.getElementById("formSetoranWilayah").innerHTML = optWil; document.getElementById("rekapWilayah").innerHTML = optWil; document.getElementById("filterDirWilayah").innerHTML = optWil; document.getElementById("filterArusKasWilayah").innerHTML = optWil; document.getElementById("filterArusKasGereja").innerHTML = optGrj;
       filterGerejaSetoran();
       
-      // Update Dashboard
       let belumSetor = res.dashboard; globalBelumSetorIDs = belumSetor.map(i => i.id.toString());
       document.getElementById("countTotal").innerText = masterDataGereja.length; document.getElementById("countBelum").innerText = belumSetor.length; document.getElementById("countSudah").innerText = masterDataGereja.length - belumSetor.length;
       if (new Date().getDate() > 20 && belumSetor.length > 0) document.getElementById("alertTenggat").classList.remove("hidden"); else document.getElementById("alertTenggat").classList.add("hidden");
@@ -692,7 +698,6 @@ serverFunctions.forEach(funcName => {
       if(belumSetor.length === 0) tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-emerald-600 font-bold">Semua sudah setor!</td></tr>`;
       else tbody.innerHTML = belumSetor.map(item => `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center p-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><span class="font-semibold text-sm">${item.nama}</span></div></td><td class="p-4 text-xs">${item.pendeta}<br><span class="text-[9px] text-slate-400 font-bold block uppercase mt-0.5">${item.wilayah}</span></td><td class="p-4 text-right admin-only"><button onclick="broadcastWA('${item.id}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 shadow-sm"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button></td></tr>`).join("");
       
-      // Update Laporan
       processLaporanData(res.laporan);
       setTimeout(() => hideLoader(), 600);
     }).getInitialSync(bln, thn, filterObj);
@@ -835,7 +840,7 @@ serverFunctions.forEach(funcName => {
     google.script.run.withSuccessHandler(res => { if(res.status) { const link = document.createElement("a"); link.href = `data:application/pdf;base64,${res.data}`; link.download = res.filename; link.click(); Swal.close(); } else Swal.fire('Gagal', res.message, 'error'); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).cetakPDFServer({nama: nama, wilayah: wilayah, pendeta: pendeta, bendahara: bendahara, minBakti: minBakti, tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}, rowsHtml, 'Riwayat_Keuangan_' + nama.replace(/\s+/g, '_') + '.pdf');
   }
 
- // ==========================================
+  // ==========================================
   // LOADING MUTASI CERDAS (Mencegah Layar Stuck)
   // ==========================================
   function inisialisasiHistoryTransfer() {
@@ -845,7 +850,6 @@ serverFunctions.forEach(funcName => {
         document.getElementById("filterTglSelesai").value = todayStr; 
     }
     
-    // HANYA munculkan loading jika data memang belum pernah ditarik
     const tbody = document.getElementById("tabelBodyHistoryTransfer");
     if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Sedang menyinkronkan data mutasi...</td></tr>';
@@ -963,7 +967,8 @@ serverFunctions.forEach(funcName => {
       .withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error'))
       .cetakPDFArusKasServer(dataHeader, rowsPemasukanHtml, rowsPengeluaranHtml, 'Laporan_Arus_Kas.pdf');
   }
-// ==========================================
+
+  // ==========================================
   // SINKRONISASI OTOMATIS (Tanpa Refresh Manual)
   // ==========================================
   function refreshBackgroundSilent() {
@@ -985,8 +990,6 @@ serverFunctions.forEach(funcName => {
       else tbody.innerHTML = belumSetor.map(item => `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center p-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><span class="font-semibold text-sm">${item.nama}</span></div></td><td class="p-4 text-xs">${item.pendeta}<br><span class="text-[9px] text-slate-400 font-bold block uppercase mt-0.5">${item.wilayah}</span></td><td class="p-4 text-right admin-only"><button onclick="broadcastWA('${item.id}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 shadow-sm"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button></td></tr>`).join("");
       
       processLaporanData(res.laporan);
-
-      // Panggil ulang history transfer secara otomatis (karena kita pakai tabel cerdas, ini tidak akan merusak layar)
       inisialisasiHistoryTransfer();
 
     }).getInitialSync(bln, thn, filterObj);
@@ -1005,12 +1008,8 @@ serverFunctions.forEach(funcName => {
           Swal.close(); 
           if(res.status) { 
             animatedAlert('success', 'Dihapus!', res.message); 
-            
-            // OPTIMISTIC UPDATE: Langsung buang baris dari memori & update angka instan 0 detik!
             globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id) === String(id_gereja) && m.bulan === bulan && String(m.tahun) === String(tahun)));
             renderTabelHistoryTransfer(); 
-            
-            // Tarik data ulang diam-diam agar dashboard ikut sinkron
             refreshBackgroundSilent(); 
           } else { 
             Swal.fire('Gagal', res.message, 'error'); 
@@ -1064,8 +1063,6 @@ serverFunctions.forEach(funcName => {
       if(actionType === 'simpan_saja') { 
         animatedAlert('success', 'Tersimpan!', 'Disimpan tanpa WA.'); 
         closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
-        
-        // SINKRONISASI DIAM-DIAM
         refreshBackgroundSilent(); 
       } 
       else {
@@ -1089,12 +1086,10 @@ serverFunctions.forEach(funcName => {
     google.script.run.withSuccessHandler(res => { 
       animatedAlert('success', 'Berhasil!', res); 
       e.target.reset(); btn.innerHTML = ori; btn.disabled = false; 
-      
-      // SINKRONISASI DIAM-DIAM
       refreshBackgroundSilent(); 
     }).simpanPengeluaran(Object.fromEntries(new FormData(e.target).entries())); 
   }
-  
+
   function bukaModalRekap() { document.getElementById("modalRekap").classList.remove("hidden"); }
 
   function generateTabelRekap() {
@@ -1305,7 +1300,6 @@ serverFunctions.forEach(funcName => {
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
-  // BACA UPLOAD FILE (EXCEL / CSV) & KIRIM KE SERVER
   function prosesImportDataLengkap() {
     const fileInput = document.getElementById('fileImportData');
     if (!fileInput.files.length) return Swal.fire('Pilih File', 'Silakan pilih file Excel (.xlsx) atau CSV yang akan diunggah.', 'warning');
@@ -1316,19 +1310,13 @@ serverFunctions.forEach(funcName => {
     reader.onload = function(e) {
       try {
         const data = new Uint8Array(e.target.result);
-        
-        // FITUR BARU 1: 'cellDates: true' agar Excel mengenali kolom sebagai Tanggal asli
         const workbook = XLSX.read(data, {type: 'array', cellDates: true});
         const firstSheet = workbook.SheetNames[0];
-        
-        // Hapus 'raw: false' agar format Date tidak berubah jadi teks acak
         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1}); 
 
-        // Fungsi Penyeragam Tanggal ke format standar Google Sheets (YYYY-MM-DD)
         const formatTgl = (val) => {
             if (!val) return "";
             if (val instanceof Date) {
-                // Menyesuaikan zona waktu agar tidak mundur 1 hari
                 const offsetDate = new Date(val.getTime() - (val.getTimezoneOffset() * 60000));
                 return offsetDate.toISOString().split('T')[0];
             }
@@ -1336,13 +1324,10 @@ serverFunctions.forEach(funcName => {
         };
         
         let dataImport = [];
-        
-        // Mulai dari i=1 untuk melewati baris Header
         for(let i = 1; i < jsonData.length; i++) {
           const cols = jsonData[i];
           if(cols && cols.length > 0 && cols[0] !== undefined && cols[0].toString().trim() !== "") {
             
-            // Tarik data angka
             let bakti = Number(cols[4]) || 0;
             let pers2 = Number(cols[6]) || 0;
             let paskah = Number(cols[8]) || 0;
@@ -1350,17 +1335,12 @@ serverFunctions.forEach(funcName => {
             let hut = Number(cols[12]) || 0;
             let natal = Number(cols[14]) || 0;
             let lainnya = Number(cols[16]) || 0;
-
-            // Hitung total setoran di baris ini
             let totalSetoran = bakti + pers2 + paskah + pentakosta + hut + natal + lainnya;
 
-            // FITUR BARU 2: ABAIKAN BARIS JIKA TOTAL SETORAN KOSONG / 0
             if (totalSetoran <= 0) continue; 
 
             dataImport.push({
-              id_gereja: cols[0], 
-              bulan: cols[2], 
-              tahun: cols[3],
+              id_gereja: cols[0], bulan: cols[2], tahun: cols[3],
               bakti_bulanan: bakti, tgl_bakti: formatTgl(cols[5]),
               pers_2: pers2, tgl_pers2: formatTgl(cols[7]),
               amplop_paskah: paskah, tgl_paskah: formatTgl(cols[9]),
@@ -1373,18 +1353,14 @@ serverFunctions.forEach(funcName => {
           }
         }
         
-        // Jika semua baris kosong/0
         if(dataImport.length === 0) return Swal.fire('Info', 'Tidak ada data baru yang disuntikkan (Semua nominal 0 atau kosong).', 'info');
 
         Swal.fire({ title: 'Mengekstrak Excel...', text: `Menyuntikkan HANYA ${dataImport.length} baris data valid ke database.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
-        // Kirim ke server
         google.script.run.withSuccessHandler(res => {
           if(res.status) {
             Swal.fire('Berhasil!', res.message, 'success');
             document.getElementById('modalImport').classList.add('hidden');
-            
-            // Panggil Refresh Diam-diam (Sinkronisasi Otomatis)
             refreshBackgroundSilent(); 
           } else Swal.fire('Gagal', res.message, 'error');
         }).importSetoranMassal(dataImport);
@@ -1395,12 +1371,8 @@ serverFunctions.forEach(funcName => {
     };
     reader.readAsArrayBuffer(file);
   }
-  
-  // ==========================================
-  // FITUR: INSTAL KE HP / DESKTOP (PWA)
-  // ==========================================
-  
-  // 1. Mendaftarkan Service Worker
+
+  // 1. Mendaftarkan Service Worker (PWA)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').then((reg) => {
@@ -1414,11 +1386,8 @@ serverFunctions.forEach(funcName => {
   // 2. Menangkap Izin Instalasi
   let deferredPrompt;
   window.addEventListener('beforeinstallprompt', (e) => {
-    // Mencegah munculnya pop-up default dari browser secara otomatis
     e.preventDefault();
     deferredPrompt = e;
-    
-    // Menampilkan tombol "Instal App" buatan kita sendiri
     const installBtn = document.getElementById('btnInstallApp');
     if(installBtn) installBtn.classList.remove('hidden');
   });
@@ -1426,7 +1395,7 @@ serverFunctions.forEach(funcName => {
   // 3. Eksekusi Tombol Instal
   function installPWA() {
     if (deferredPrompt) {
-      deferredPrompt.prompt(); // Memunculkan pop-up instalasi bawaan HP/Laptop
+      deferredPrompt.prompt(); 
       deferredPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('Pengguna menyetujui instalasi PWA');

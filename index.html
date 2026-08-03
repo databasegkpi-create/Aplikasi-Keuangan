@@ -1305,6 +1305,7 @@ serverFunctions.forEach(funcName => {
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
+  // BACA UPLOAD FILE (EXCEL / CSV) & KIRIM KE SERVER
   function prosesImportDataLengkap() {
     const fileInput = document.getElementById('fileImportData');
     if (!fileInput.files.length) return Swal.fire('Pilih File', 'Silakan pilih file Excel (.xlsx) atau CSV yang akan diunggah.', 'warning');
@@ -1315,38 +1316,76 @@ serverFunctions.forEach(funcName => {
     reader.onload = function(e) {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
+        
+        // FITUR BARU 1: 'cellDates: true' agar Excel mengenali kolom sebagai Tanggal asli
+        const workbook = XLSX.read(data, {type: 'array', cellDates: true});
         const firstSheet = workbook.SheetNames[0];
         
-        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1, defval: "", raw: false}); 
+        // Hapus 'raw: false' agar format Date tidak berubah jadi teks acak
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1}); 
+
+        // Fungsi Penyeragam Tanggal ke format standar Google Sheets (YYYY-MM-DD)
+        const formatTgl = (val) => {
+            if (!val) return "";
+            if (val instanceof Date) {
+                // Menyesuaikan zona waktu agar tidak mundur 1 hari
+                const offsetDate = new Date(val.getTime() - (val.getTimezoneOffset() * 60000));
+                return offsetDate.toISOString().split('T')[0];
+            }
+            return String(val).trim();
+        };
         
         let dataImport = [];
+        
+        // Mulai dari i=1 untuk melewati baris Header
         for(let i = 1; i < jsonData.length; i++) {
           const cols = jsonData[i];
           if(cols && cols.length > 0 && cols[0] !== undefined && cols[0].toString().trim() !== "") {
+            
+            // Tarik data angka
+            let bakti = Number(cols[4]) || 0;
+            let pers2 = Number(cols[6]) || 0;
+            let paskah = Number(cols[8]) || 0;
+            let pentakosta = Number(cols[10]) || 0;
+            let hut = Number(cols[12]) || 0;
+            let natal = Number(cols[14]) || 0;
+            let lainnya = Number(cols[16]) || 0;
+
+            // Hitung total setoran di baris ini
+            let totalSetoran = bakti + pers2 + paskah + pentakosta + hut + natal + lainnya;
+
+            // FITUR BARU 2: ABAIKAN BARIS JIKA TOTAL SETORAN KOSONG / 0
+            if (totalSetoran <= 0) continue; 
+
             dataImport.push({
-              id_gereja: cols[0], bulan: cols[2], tahun: cols[3],
-              bakti_bulanan: cols[4] || 0, tgl_bakti: cols[5] || "",
-              pers_2: cols[6] || 0, tgl_pers2: cols[7] || "",
-              amplop_paskah: cols[8] || 0, tgl_paskah: cols[9] || "",
-              amplop_pentakosta: cols[10] || 0, tgl_pentakosta: cols[11] || "",
-              amplop_hut: cols[12] || 0, tgl_hut: cols[13] || "",
-              amplop_natal: cols[14] || 0, tgl_natal: cols[15] || "",
-              setoran_lainnya: cols[16] || 0, tgl_lainnya: cols[17] || "",
+              id_gereja: cols[0], 
+              bulan: cols[2], 
+              tahun: cols[3],
+              bakti_bulanan: bakti, tgl_bakti: formatTgl(cols[5]),
+              pers_2: pers2, tgl_pers2: formatTgl(cols[7]),
+              amplop_paskah: paskah, tgl_paskah: formatTgl(cols[9]),
+              amplop_pentakosta: pentakosta, tgl_pentakosta: formatTgl(cols[11]),
+              amplop_hut: hut, tgl_hut: formatTgl(cols[13]),
+              amplop_natal: natal, tgl_natal: formatTgl(cols[15]),
+              setoran_lainnya: lainnya, tgl_lainnya: formatTgl(cols[17]),
               ket_lainnya: cols[18] || "-"
             });
           }
         }
         
-        if(dataImport.length === 0) return Swal.fire('Gagal', 'File kosong atau baris data tidak valid.', 'error');
+        // Jika semua baris kosong/0
+        if(dataImport.length === 0) return Swal.fire('Info', 'Tidak ada data baru yang disuntikkan (Semua nominal 0 atau kosong).', 'info');
 
-        Swal.fire({ title: 'Mengekstrak Excel...', text: `Bersiap menyuntikkan ${dataImport.length} baris data ke database.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'Mengekstrak Excel...', text: `Menyuntikkan HANYA ${dataImport.length} baris data valid ke database.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
+        // Kirim ke server
         google.script.run.withSuccessHandler(res => {
           if(res.status) {
             Swal.fire('Berhasil!', res.message, 'success');
             document.getElementById('modalImport').classList.add('hidden');
-            inisialisasiData(); 
+            
+            // Panggil Refresh Diam-diam (Sinkronisasi Otomatis)
+            refreshBackgroundSilent(); 
           } else Swal.fire('Gagal', res.message, 'error');
         }).importSetoranMassal(dataImport);
 
@@ -1356,7 +1395,7 @@ serverFunctions.forEach(funcName => {
     };
     reader.readAsArrayBuffer(file);
   }
-
+  
   // ==========================================
   // FITUR: INSTAL KE HP / DESKTOP (PWA)
   // ==========================================

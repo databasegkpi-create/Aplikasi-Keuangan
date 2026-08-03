@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aplikasi Keuangan Sinode GKPI</title>
-  <button id="btnInstallApp" onclick="installPWA()" class="hidden admin-only bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-amber-100 transition-all">
-    <i class="fas fa-download md:mr-1.5"></i> <span class="hidden md:inline">Instal App</span>
-  </button>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -114,6 +114,9 @@
         
         <button onclick="openModalSetoran()" class="admin-only bg-brand-600 text-white px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm shadow-brand-500/30 hover:bg-brand-700 transition-all"><i class="fas fa-plus md:mr-1.5"></i> <span class="hidden md:inline">Buat Setoran</span></button>
         <button onclick="handleLogout()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-2" title="Keluar"><i class="fas fa-power-off text-xs"></i></button>
+        <button id="btnInstallApp" onclick="installPWA()" class="hidden admin-only bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-amber-100 transition-all">
+    <i class="fas fa-download md:mr-1.5"></i> <span class="hidden md:inline">Instal App</span>
+  </button>
       </div>
     </header>
 

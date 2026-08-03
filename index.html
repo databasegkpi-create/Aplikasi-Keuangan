@@ -538,7 +538,7 @@ let currentGerejaIdModal = null;
 const swalColor = '#7c3aed';
 
 // JEMBATAN API GITHUB (POLYFILL) - PARALEL & SUPER CEPAT
-const API_URL = "https://script.google.com/macros/library/d/1gQM5MIh_pR-XXMuh-Aw9_O0ty0P3Va4BLPQ9NAzdM0dDRlHmgQ2axWfn/221";
+const API_URL = https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec";
 
 window.google = {
   script: {
@@ -568,7 +568,7 @@ serverFunctions.forEach(funcName => {
     this._successHandler = null;
     this._failureHandler = null;
 
-    if (API_URL === "https://script.google.com/macros/library/d/1gQM5MIh_pR-XXMuh-Aw9_O0ty0P3Va4BLPQ9NAzdM0dDRlHmgQ2axWfn/221" || API_URL.trim() === "") {
+    if (API_URL === "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec" || API_URL.trim() === "") {
        Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 

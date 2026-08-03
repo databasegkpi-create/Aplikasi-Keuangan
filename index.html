@@ -1294,6 +1294,47 @@ serverFunctions.forEach(funcName => {
     };
     reader.readAsArrayBuffer(file);
   }
+
+  // ==========================================
+  // FITUR: INSTAL KE HP / DESKTOP (PWA)
+  // ==========================================
+  
+  // 1. Mendaftarkan Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        console.log('Service Worker berhasil didaftarkan.', reg);
+      }).catch((err) => {
+        console.log('Service Worker gagal didaftarkan.', err);
+      });
+    });
+  }
+
+  // 2. Menangkap Izin Instalasi
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Mencegah munculnya pop-up default dari browser secara otomatis
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Menampilkan tombol "Instal App" buatan kita sendiri
+    const installBtn = document.getElementById('btnInstallApp');
+    if(installBtn) installBtn.classList.remove('hidden');
+  });
+
+  // 3. Eksekusi Tombol Instal
+  function installPWA() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt(); // Memunculkan pop-up instalasi bawaan HP/Laptop
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Pengguna menyetujui instalasi PWA');
+          document.getElementById('btnInstallApp').classList.add('hidden');
+        }
+        deferredPrompt = null;
+      });
+    }
+  }
 </script>
 </body>
 </html>

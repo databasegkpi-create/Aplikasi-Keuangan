@@ -522,10 +522,8 @@
 
 <!-- ================= SCRIPTS ================= -->
 <script>
-// JEMBATAN API GITHUB (POLYFILL) - WAJIB DIISI!
-// JEMBATAN API GITHUB (POLYFILL) - WAJIB DIISI!
-
-// 1. Letakkan link asli Anda HANYA di baris ini:
+  
+// JEMBATAN API GITHUB (POLYFILL) DENGAN SISTEM ANTRIAN (QUEUE)
 const API_URL = "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec";
 
 window.google = {
@@ -533,14 +531,8 @@ window.google = {
     run: {
       _successHandler: null,
       _failureHandler: null,
-      withSuccessHandler: function(callback) {
-        this._successHandler = callback;
-        return this;
-      },
-      withFailureHandler: function(callback) {
-        this._failureHandler = callback;
-        return this;
-      }
+      withSuccessHandler: function(callback) { this._successHandler = callback; return this; },
+      withFailureHandler: function(callback) { this._failureHandler = callback; return this; }
     }
   }
 };
@@ -555,6 +547,9 @@ const serverFunctions = [
   "broadcastGajiMassal", "importSetoranMassal"
 ];
 
+// SISTEM ANTRIAN (QUEUE): Mencegah Google Server menolak request yang masuk bersamaan
+window.apiQueue = Promise.resolve();
+
 serverFunctions.forEach(funcName => {
   window.google.script.run[funcName] = function(...args) {
     const onSuccess = this._successHandler;
@@ -562,31 +557,32 @@ serverFunctions.forEach(funcName => {
     this._successHandler = null;
     this._failureHandler = null;
 
-    // 2. PERBAIKAN: Syarat error ini akan menyala JIKA link-nya masih tulisan "MASUKKAN_LINK..." atau kosong. 
-    // Jangan ubah tulisan di dalam tanda kutip IF ini.
     if (API_URL === "MASUKKAN_LINK_WEB_APP_GOOGLE_SCRIPT_ANDA_DISINI" || API_URL.trim() === "") {
-       Swal.fire('Error API', 'Anda belum memasukkan Link Web App Google Script ke dalam variabel API_URL di kode Index.html', 'error');
-       return;
+       Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ func: funcName, args: args })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.error && onFailure) {
-        onFailure(data.error);
-      } else if (onSuccess) {
-        onSuccess(data.result);
-      }
-    })
-    .catch(err => {
-      if (onFailure) onFailure({message: "Koneksi ke Server Terputus / API Error."});
+    // Masukkan setiap request API ke dalam antrian
+    window.apiQueue = window.apiQueue.then(() => {
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ func: funcName, args: args })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error && onFailure) { onFailure(data.error); }
+        else if (onSuccess) {
+            try { onSuccess(data.result); } catch(e) { console.error("Error Fungsi UI:", e); }
+        }
+      })
+      .catch(err => {
+        console.error("Fetch API Error:", err);
+        if (onFailure) onFailure({message: "Koneksi terputus. Coba refresh halaman."});
+      });
     });
   };
 });
+  
   function populateTahunDropdown() {
     const selectTahun = document.getElementById("formSetoranTahun");
     if (!selectTahun) return;
@@ -841,7 +837,31 @@ serverFunctions.forEach(funcName => {
     google.script.run.withSuccessHandler(res => { if(res.status) { const link = document.createElement("a"); link.href = `data:application/pdf;base64,${res.data}`; link.download = res.filename; link.click(); Swal.close(); } else Swal.fire('Gagal', res.message, 'error'); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).cetakPDFServer({nama: nama, wilayah: wilayah, pendeta: pendeta, bendahara: bendahara, minBakti: minBakti, tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}, rowsHtml, 'Riwayat_Keuangan_' + nama.replace(/\s+/g, '_') + '.pdf');
   }
 
-  inisialisasiHistoryTransfer()
+ // ==========================================
+  // LOADING MUTASI INLINE (Mencegah Tabrakan Pop-up)
+  // ==========================================
+  function inisialisasiHistoryTransfer() {
+    const d = new Date(), firstDay = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0], todayStr = d.toISOString().split('T')[0];
+    if(!document.getElementById("filterTglMulai").value) { 
+        document.getElementById("filterTglMulai").value = firstDay; 
+        document.getElementById("filterTglSelesai").value = todayStr; 
+    }
+    
+    // Tampilkan loading berputar elegan DI DALAM TABEL (Bukan Pop-up!)
+    const tbody = document.getElementById("tabelBodyHistoryTransfer");
+    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Sedang menyinkronkan data mutasi...</td></tr>';
+    
+    google.script.run
+      .withSuccessHandler(res => { 
+         globalDataSemuaMutasi = res || []; 
+         renderTabelHistoryTransfer(); 
+         // Tidak perlu ada Swal.close() di sini karena kita tidak memunculkan Pop-up
+      })
+      .withFailureHandler(err => { 
+         tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
+      })
+      .getRekapTahunan(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
+  }
 
   function renderTabelHistoryTransfer() {
     const tMulai = document.getElementById("filterTglMulai").value, tSelesai = document.getElementById("filterTglSelesai").value, search = document.getElementById("searchHistoryTransfer").value.toLowerCase(), tbody = document.getElementById("tabelBodyHistoryTransfer");

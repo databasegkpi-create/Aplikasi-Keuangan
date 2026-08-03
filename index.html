@@ -528,7 +528,7 @@
 <!-- ================= SCRIPTS ================= -->
 <script>
   
-// JEMBATAN API GITHUB (POLYFILL) DENGAN SISTEM ANTRIAN (QUEUE)
+// JEMBATAN API GITHUB (POLYFILL) - PARALEL & SUPER CEPAT
 const API_URL = "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec";
 
 window.google = {
@@ -552,9 +552,6 @@ const serverFunctions = [
   "broadcastGajiMassal", "importSetoranMassal"
 ];
 
-// SISTEM ANTRIAN (QUEUE): Mencegah Google Server menolak request yang masuk bersamaan
-window.apiQueue = Promise.resolve();
-
 serverFunctions.forEach(funcName => {
   window.google.script.run[funcName] = function(...args) {
     const onSuccess = this._successHandler;
@@ -566,24 +563,20 @@ serverFunctions.forEach(funcName => {
        Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 
-    // Masukkan setiap request API ke dalam antrian
-    window.apiQueue = window.apiQueue.then(() => {
-      return fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ func: funcName, args: args })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error && onFailure) { onFailure(data.error); }
-        else if (onSuccess) {
-            try { onSuccess(data.result); } catch(e) { console.error("Error Fungsi UI:", e); }
-        }
-      })
-      .catch(err => {
-        console.error("Fetch API Error:", err);
-        if (onFailure) onFailure({message: "Koneksi terputus. Coba refresh halaman."});
-      });
+    // Tembak API secara langsung tanpa antrian (Kecepatan Maksimal)
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ func: funcName, args: args })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error && onFailure) onFailure(data.error);
+      else if (onSuccess) { try { onSuccess(data.result); } catch(e) { console.error(e); } }
+    })
+    .catch(err => {
+      console.error(err);
+      if (onFailure) onFailure({message: "Koneksi lambat / terputus."});
     });
   };
 });
@@ -843,7 +836,7 @@ serverFunctions.forEach(funcName => {
   }
 
  // ==========================================
-  // LOADING MUTASI INLINE (Mencegah Tabrakan Pop-up)
+  // LOADING MUTASI CERDAS (Mencegah Layar Stuck)
   // ==========================================
   function inisialisasiHistoryTransfer() {
     const d = new Date(), firstDay = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0], todayStr = d.toISOString().split('T')[0];
@@ -852,18 +845,21 @@ serverFunctions.forEach(funcName => {
         document.getElementById("filterTglSelesai").value = todayStr; 
     }
     
-    // Tampilkan loading berputar elegan DI DALAM TABEL (Bukan Pop-up!)
+    // HANYA munculkan loading jika data memang belum pernah ditarik
     const tbody = document.getElementById("tabelBodyHistoryTransfer");
-    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Sedang menyinkronkan data mutasi...</td></tr>';
+    if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Sedang menyinkronkan data mutasi...</td></tr>';
+    }
     
     google.script.run
       .withSuccessHandler(res => { 
          globalDataSemuaMutasi = res || []; 
          renderTabelHistoryTransfer(); 
-         // Tidak perlu ada Swal.close() di sini karena kita tidak memunculkan Pop-up
       })
       .withFailureHandler(err => { 
-         tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
+         if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
+             tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
+         }
       })
       .getRekapTahunan(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
   }
@@ -967,6 +963,34 @@ serverFunctions.forEach(funcName => {
       .withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error'))
       .cetakPDFArusKasServer(dataHeader, rowsPemasukanHtml, rowsPengeluaranHtml, 'Laporan_Arus_Kas.pdf');
   }
+// ==========================================
+  // SINKRONISASI OTOMATIS (Tanpa Refresh Manual)
+  // ==========================================
+  function refreshBackgroundSilent() {
+    const bln = document.getElementById("filterBulan").value, thn = document.getElementById("filterTahun").value;
+    const filterObj = { tipe: document.getElementById("tipePemasukan").value, tglHarian: document.getElementById("filterTglPemasukan").value, blnBulanan: document.getElementById("filterBlnPemasukan").value, tahun: thn, id_gereja: document.getElementById("filterArusKasGereja").value };
+    
+    google.script.run.withSuccessHandler(res => {
+      masterDataGereja = res.gereja;
+      let belumSetor = res.dashboard; 
+      globalBelumSetorIDs = belumSetor.map(i => i.id.toString());
+      
+      document.getElementById("countTotal").innerText = masterDataGereja.length; 
+      document.getElementById("countBelum").innerText = belumSetor.length; 
+      document.getElementById("countSudah").innerText = masterDataGereja.length - belumSetor.length;
+      if (new Date().getDate() > 20 && belumSetor.length > 0) document.getElementById("alertTenggat").classList.remove("hidden"); else document.getElementById("alertTenggat").classList.add("hidden");
+      
+      const tbody = document.getElementById("tabelTunggakan");
+      if(belumSetor.length === 0) tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-emerald-600 font-bold">Semua sudah setor!</td></tr>`;
+      else tbody.innerHTML = belumSetor.map(item => `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center p-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><span class="font-semibold text-sm">${item.nama}</span></div></td><td class="p-4 text-xs">${item.pendeta}<br><span class="text-[9px] text-slate-400 font-bold block uppercase mt-0.5">${item.wilayah}</span></td><td class="p-4 text-right admin-only"><button onclick="broadcastWA('${item.id}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 shadow-sm"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button></td></tr>`).join("");
+      
+      processLaporanData(res.laporan);
+
+      // Panggil ulang history transfer secara otomatis (karena kita pakai tabel cerdas, ini tidak akan merusak layar)
+      inisialisasiHistoryTransfer();
+
+    }).getInitialSync(bln, thn, filterObj);
+  }
 
   function hapusPemasukanDariHistory(id_gereja, bulan, tahun) {
     Swal.fire({
@@ -977,7 +1001,23 @@ serverFunctions.forEach(funcName => {
     }).then((result) => {
       if (result.isConfirmed) {
         Swal.fire({ title: 'Menghapus Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        google.script.run.withSuccessHandler(res => { Swal.close(); if(res.status) { animatedAlert('success', 'Dihapus!', res.message); inisialisasiData(); inisialisasiHistoryTransfer(); } else { Swal.fire('Gagal', res.message, 'error'); } }).withFailureHandler(err => { Swal.close(); Swal.fire('Error Server', err.message, 'error'); }).hapusSetoran(id_gereja, bulan, tahun);
+        google.script.run.withSuccessHandler(res => { 
+          Swal.close(); 
+          if(res.status) { 
+            animatedAlert('success', 'Dihapus!', res.message); 
+            
+            // OPTIMISTIC UPDATE: Langsung buang baris dari memori & update angka instan 0 detik!
+            globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id) === String(id_gereja) && m.bulan === bulan && String(m.tahun) === String(tahun)));
+            renderTabelHistoryTransfer(); 
+            
+            // Tarik data ulang diam-diam agar dashboard ikut sinkron
+            refreshBackgroundSilent(); 
+          } else { 
+            Swal.fire('Gagal', res.message, 'error'); 
+          } 
+        }).withFailureHandler(err => { 
+          Swal.close(); Swal.fire('Error Server', err.message, 'error'); 
+        }).hapusSetoran(id_gereja, bulan, tahun);
       }
     });
   }
@@ -1021,17 +1061,40 @@ serverFunctions.forEach(funcName => {
     btnSimpan.disabled = true; btnKirim.disabled = true; actionType === 'simpan_saja' ? btnSimpan.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...' : btnKirim.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
     const sHandler = (res) => {
       if (res && res.status === false) { Swal.fire('Gagal', res.message, 'error'); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; return; }
-      if(actionType === 'simpan_saja') { animatedAlert('success', 'Tersimpan!', 'Disimpan tanpa WA.'); closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; inisialisasiData(); inisialisasiHistoryTransfer(); } 
+      if(actionType === 'simpan_saja') { 
+        animatedAlert('success', 'Tersimpan!', 'Disimpan tanpa WA.'); 
+        closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
+        
+        // SINKRONISASI DIAM-DIAM
+        refreshBackgroundSilent(); 
+      } 
       else {
          btnKirim.innerHTML = '<i class="fas fa-paper-plane fa-bounce"></i> Mengirim WA...';
-         google.script.run.withSuccessHandler(kRes => { kRes.status ? animatedAlert('success', 'Selesai!', 'Kwitansi WA terkirim.') : Swal.fire('Info', kRes.message, 'info'); closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; inisialisasiData(); inisialisasiHistoryTransfer(); }).withFailureHandler(err => { Swal.fire('Peringatan', 'WA Sibuk: '+err.message, 'warning'); closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; inisialisasiData(); inisialisasiHistoryTransfer(); }).buatDanKirimKwitansi(formObj);
+         google.script.run.withSuccessHandler(kRes => { 
+           kRes.status ? animatedAlert('success', 'Selesai!', 'Kwitansi WA terkirim.') : Swal.fire('Info', kRes.message, 'info'); 
+           closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
+           refreshBackgroundSilent(); 
+         }).withFailureHandler(err => { 
+           Swal.fire('Peringatan', 'WA Sibuk: '+err.message, 'warning'); 
+           closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
+           refreshBackgroundSilent(); 
+         }).buatDanKirimKwitansi(formObj);
       }
     };
     formObj.is_edit === "true" ? google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).updateSetoran(formObj) : google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).simpanData(formObj);
   }
 
-  function submitPengeluaran(e) { e.preventDefault(); const btn = document.getElementById("btnSubmitPengeluaran"), ori = btn.innerHTML; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> MEMPROSES...'; btn.disabled = true; google.script.run.withSuccessHandler(res => { animatedAlert('success', 'Berhasil!', res); e.target.reset(); btn.innerHTML = ori; btn.disabled = false; loadLaporanKeuangan(); }).simpanPengeluaran(Object.fromEntries(new FormData(e.target).entries())); }
-
+  function submitPengeluaran(e) { 
+    e.preventDefault(); const btn = document.getElementById("btnSubmitPengeluaran"), ori = btn.innerHTML; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> MEMPROSES...'; btn.disabled = true; 
+    google.script.run.withSuccessHandler(res => { 
+      animatedAlert('success', 'Berhasil!', res); 
+      e.target.reset(); btn.innerHTML = ori; btn.disabled = false; 
+      
+      // SINKRONISASI DIAM-DIAM
+      refreshBackgroundSilent(); 
+    }).simpanPengeluaran(Object.fromEntries(new FormData(e.target).entries())); 
+  }
+  
   function bukaModalRekap() { document.getElementById("modalRekap").classList.remove("hidden"); }
 
   function generateTabelRekap() {

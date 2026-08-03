@@ -568,10 +568,11 @@ serverFunctions.forEach(funcName => {
     this._successHandler = null;
     this._failureHandler = null;
 
-    if (API_URL === "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec" || API_URL.trim() === "") {
+    if (API_URL === "MASUKKAN_LINK_WEB_APP_GOOGLE_SCRIPT_ANDA_DISINI" || API_URL.trim() === "") {
        Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 
+    // Tembak API secara langsung tanpa antrian (Kecepatan Maksimal)
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -580,7 +581,7 @@ serverFunctions.forEach(funcName => {
     .then(response => response.json())
     .then(data => {
       if (data.error && onFailure) onFailure(data.error);
-      else if (onSuccess) { try { onSuccess(data.result); } catch(e) { console.error("Error UI:", e); } }
+      else if (onSuccess) { try { onSuccess(data.result); } catch(e) { console.error(e); } }
     })
     .catch(err => {
       console.error(err);

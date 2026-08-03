@@ -523,6 +523,9 @@
 <!-- ================= SCRIPTS ================= -->
 <script>
 // JEMBATAN API GITHUB (POLYFILL) - WAJIB DIISI!
+// JEMBATAN API GITHUB (POLYFILL) - WAJIB DIISI!
+
+// 1. Letakkan link asli Anda HANYA di baris ini:
 const API_URL = "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec";
 
 window.google = {
@@ -559,7 +562,9 @@ serverFunctions.forEach(funcName => {
     this._successHandler = null;
     this._failureHandler = null;
 
-    if (API_URL === "https://script.google.com/macros/s/AKfycbw3H1c3AQ-_VPCIjtH933lWatpU5LhCzab7P15psIMk114a4Zlo1Uec9l1Ch6EeFLKNMg/exec") {
+    // 2. PERBAIKAN: Syarat error ini akan menyala JIKA link-nya masih tulisan "MASUKKAN_LINK..." atau kosong. 
+    // Jangan ubah tulisan di dalam tanda kutip IF ini.
+    if (API_URL === "MASUKKAN_LINK_WEB_APP_GOOGLE_SCRIPT_ANDA_DISINI" || API_URL.trim() === "") {
        Swal.fire('Error API', 'Anda belum memasukkan Link Web App Google Script ke dalam variabel API_URL di kode Index.html', 'error');
        return;
     }
@@ -582,7 +587,6 @@ serverFunctions.forEach(funcName => {
     });
   };
 });
-
   function populateTahunDropdown() {
     const selectTahun = document.getElementById("formSetoranTahun");
     if (!selectTahun) return;

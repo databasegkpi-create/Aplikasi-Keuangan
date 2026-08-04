@@ -1407,6 +1407,7 @@ serverFunctions.forEach(funcName => {
       });
     }
   }
+  
   // ==========================================
   // FITUR: KEAMANAN PIN UNTUK IMPORT DATA
   // ==========================================
@@ -1419,7 +1420,14 @@ serverFunctions.forEach(funcName => {
       inputAttributes: {
         autocapitalize: 'off',
         autocorrect: 'off',
-        maxlength: 10
+        maxlength: 10,
+        autocomplete: 'new-password', // Ini mencegah Chrome mengisi otomatis
+        readonly: true, // Trik tambahan agar tidak di-autofill saat baru muncul
+      },
+      didOpen: () => {
+        // Membuka kunci kolom saat pengguna mulai mengklik (Mencegah autofill paksa)
+        const input = Swal.getInput();
+        input.removeAttribute('readonly');
       },
       showCancelButton: true,
       confirmButtonText: 'Buka Akses',
@@ -1427,8 +1435,8 @@ serverFunctions.forEach(funcName => {
       confirmButtonColor: '#7c3aed',
       cancelButtonColor: '#94a3b8',
       preConfirm: (pin) => {
-        // GANTI "123456" DI BAWAH INI DENGAN PIN YANG ANDA INGINKAN
-        if (pin === '112233') {
+        // GANTI "123456" DENGAN PIN RAHASIA ANDA
+        if (pin === '123456') {
           return true;
         } else {
           Swal.showValidationMessage('PIN Salah! Akses ditolak.');
@@ -1437,14 +1445,9 @@ serverFunctions.forEach(funcName => {
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        // Jika PIN benar, buka jendela modal Import
         const modal = document.getElementById('modalImport');
         modal.classList.remove('hidden');
-        
-        // Sedikit jeda agar animasi transisinya mulus
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-        }, 10);
+        setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
       }
     });
   }

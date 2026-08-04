@@ -84,6 +84,7 @@
       <button onclick="switchTab('direktori')" id="btnDirektori" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-building w-5 text-center"></i> Data Pemasukan</button>
       <button onclick="switchTab('pengeluaran')" id="btnPengeluaran" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"> <i class="fas fa-wallet w-5 text-center"></i> Pengeluaran</button>
       <button onclick="switchTab('historyTransfer')" id="btnHistoryTransfer" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-list-ul w-5 text-center"></i> History Transfer</button>
+      <button onclick="switchTab('historyPengeluaran')" id="btnHistoryPengeluaran" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-file-invoice-dollar w-5 text-center"></i> History Pengeluaran</button>
       <button onclick="switchTab('penggajian')" id="btnPenggajian" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"></button>
     </nav>
     <div class="p-4 border-t border-slate-100">
@@ -292,7 +293,46 @@
            
         </div>
       </div>
-
+      <!-- ================= 4.5 PAGE HISTORY PENGELUARAN ================= -->
+      <div id="pageHistoryPengeluaran" class="hidden space-y-6 animate__animated animate__fadeIn">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div class="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto">
+             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">Dari:</span><input type="date" id="filterTglMulaiPengeluaran" onchange="currentPagePengeluaran=1; renderTabelHistoryPengeluaran()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">S/d:</span><input type="date" id="filterTglSelesaiPengeluaran" onchange="currentPagePengeluaran=1; renderTabelHistoryPengeluaran()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+          </div>
+          <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
+            <div class="relative w-full md:w-72"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryPengeluaran" oninput="currentPagePengeluaran=1; renderTabelHistoryPengeluaran()" placeholder="Cari keterangan pengeluaran..." class="w-full py-2.5 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-rose-500 transition-all"></div>
+            <button onclick="cetakPDFHistoryPengeluaran()" class="bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-rose-700 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-print mr-1.5"></i> Cetak PDF</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Dana Keluar (Filter)</p><h3 class="text-xl font-black text-rose-600 mt-0.5" id="sumTotalDanaPengeluaran">Rp 0</h3></div>
+              <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold"><i class="fas fa-file-invoice-dollar"></i></div>
+           </div>
+        </div>
+        
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+           <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4"><h3 class="font-bold text-slate-800 text-base"><i class="fas fa-arrow-up-right-from-square text-rose-500 mr-2"></i>Daftar Mutasi Pengeluaran Kas</h3><p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="labelTotalMutasiPengeluaran">Total: 0 Transaksi</p></div>
+           
+           <div class="table-responsive">
+              <table class="w-full text-left whitespace-nowrap clean-table">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Tanggal Pengeluaran</th>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Keterangan Transaksi</th>
+                    <th class="text-right py-3 px-4 font-bold text-slate-700 text-[11px]">Nominal (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelBodyHistoryPengeluaran"></tbody>
+              </table>
+           </div>
+           
+           <!-- Wadah navigasi paginasi -->
+           <div id="paginationPengeluaran" class="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4"></div>
+           
+        </div>
+      </div>
       
       <!-- ================= 5. PAGE PENGGAJIAN PENDETA ================= -->
       <div id="pagePenggajian" class="hidden space-y-6 animate__animated animate__fadeIn">
@@ -545,6 +585,9 @@ let globalDataPenggajian = [];
   // TAMBAHKAN DUA VARIABEL INI UNTUK PAGINASI:
 let currentPageMutasi = 1;
 const itemsPerPageMutasi = 25;
+let globalSemuaPengeluaran = [];
+let currentPagePengeluaran = 1;
+const itemsPerPagePengeluaran = 25;
 const currentYear = new Date().getFullYear();
 let currentGerejaIdModal = null; 
 const swalColor = '#7c3aed';
@@ -680,14 +723,18 @@ serverFunctions.forEach(funcName => {
 
   function switchTab(tab) {
     if(tab === 'penggajian' && (sessionStorage.getItem("user_role") || "user") !== 'kabiro') return Swal.fire({ icon: 'warning', title: 'Akses Terkunci', text: 'Mohon maaf, menu Penggajian Pendeta hanya dapat diakses oleh Ka. Biro Keuangan.', confirmButtonColor: '#ef4444' });
-    ['pageDashboard', 'pageDirektori', 'pagePengeluaran', 'pageHistoryTransfer', 'pagePenggajian'].forEach(id => { let el = document.getElementById(id); if(el) el.classList.add('hidden'); });
-    ['btnDashboard', 'btnDirektori', 'btnPengeluaran', 'btnHistoryTransfer', 'btnPenggajian'].forEach(id => { let el = document.getElementById(id); if(el) el.classList.remove('nav-active'); });
+    
+    // Perbarui array dengan tambahan 'pageHistoryPengeluaran'
+    ['pageDashboard', 'pageDirektori', 'pagePengeluaran', 'pageHistoryTransfer', 'pageHistoryPengeluaran', 'pagePenggajian'].forEach(id => { let el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+    ['btnDashboard', 'btnDirektori', 'btnPengeluaran', 'btnHistoryTransfer', 'btnHistoryPengeluaran', 'btnPenggajian'].forEach(id => { let el = document.getElementById(id); if(el) el.classList.remove('nav-active'); });
+    
     if(window.innerWidth < 768) toggleSidebar();
     
     if(tab === 'dashboard') { document.getElementById('pageDashboard').classList.remove('hidden'); document.getElementById('btnDashboard').classList.add('nav-active'); loadDashboardData(); loadLaporanKeuangan(); } 
     else if(tab === 'direktori') { document.getElementById('pageDirektori').classList.remove('hidden'); document.getElementById('btnDirektori').classList.add('nav-active'); renderDirektoriCard(); fetchDataDirektoriLengkap(); } 
     else if(tab === 'pengeluaran') { document.getElementById('pagePengeluaran').classList.remove('hidden'); document.getElementById('btnPengeluaran').classList.add('nav-active'); } 
     else if(tab === 'historyTransfer') { document.getElementById('pageHistoryTransfer').classList.remove('hidden'); document.getElementById('btnHistoryTransfer').classList.add('nav-active'); inisialisasiHistoryTransfer(); } 
+    else if(tab === 'historyPengeluaran') { document.getElementById('pageHistoryPengeluaran').classList.remove('hidden'); document.getElementById('btnHistoryPengeluaran').classList.add('nav-active'); inisialisasiHistoryPengeluaran(); } 
     else if(tab === 'penggajian') { document.getElementById('pagePenggajian').classList.remove('hidden'); document.getElementById('btnPenggajian').classList.add('nav-active'); muatDataPenggajian(); }
   }
 
@@ -985,6 +1032,150 @@ serverFunctions.forEach(funcName => {
     google.script.run.withSuccessHandler(res => { if(res.status) { const l = document.createElement("a"); l.href = `data:application/pdf;base64,${res.data}`; l.download = res.filename; l.click(); Swal.close(); } else Swal.fire('Gagal', res.message, 'error'); }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error')).cetakPDFHistoryServer({ tglMulai: document.getElementById("filterTglMulai").value, tglSelesai: document.getElementById("filterTglSelesai").value, totalSemua: totalSemuaNominal, tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) }, rowsHtml, 'Laporan_History_Transfer.pdf');
   }
 
+  // ==========================================
+  // FITUR: HISTORY PENGELUARAN FULL (PAGINASI & PDF)
+  // ==========================================
+  function inisialisasiHistoryPengeluaran() {
+    const d = new Date(), firstDay = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0], todayStr = d.toISOString().split('T')[0];
+    if(!document.getElementById("filterTglMulaiPengeluaran").value) { 
+        document.getElementById("filterTglMulaiPengeluaran").value = firstDay; 
+        document.getElementById("filterTglSelesaiPengeluaran").value = todayStr; 
+    }
+    
+    const tbody = document.getElementById("tabelBodyHistoryPengeluaran");
+    if (!globalSemuaPengeluaran || globalSemuaPengeluaran.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Menyinkronkan data pengeluaran...</td></tr>';
+    }
+    
+    // Meminta server mengirim semua data pengeluaran (tanpa terikat filter bulan Dasbor)
+    const filterObj = { tipe: 'semua', tglHarian: '', blnBulanan: '', tahun: document.getElementById("filterTahun").value || new Date().getFullYear(), id_gereja: '' };
+    google.script.run
+      .withSuccessHandler(res => { 
+         globalSemuaPengeluaran = res.tabelPengeluaran || []; 
+         renderTabelHistoryPengeluaran(); 
+      })
+      .withFailureHandler(err => { 
+         if (!globalSemuaPengeluaran || globalSemuaPengeluaran.length === 0) {
+             tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
+         }
+      })
+      .getLaporanKeuangan(filterObj);
+  }
+
+  function renderTabelHistoryPengeluaran() {
+    const tMulai = document.getElementById("filterTglMulaiPengeluaran").value;
+    const tSelesai = document.getElementById("filterTglSelesaiPengeluaran").value;
+    const search = document.getElementById("searchHistoryPengeluaran").value.toLowerCase();
+    const tbody = document.getElementById("tabelBodyHistoryPengeluaran");
+    const paginationContainer = document.getElementById("paginationPengeluaran");
+    
+    if (!globalSemuaPengeluaran || globalSemuaPengeluaran.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-400">Belum ada data pengeluaran.</td></tr>';
+        if(paginationContainer) paginationContainer.innerHTML = '';
+        document.getElementById("labelTotalMutasiPengeluaran").innerText = `Total: 0 Transaksi`;
+        document.getElementById("sumTotalDanaPengeluaran").innerText = "Rp 0";
+        return;
+    }
+
+    let filtered = globalSemuaPengeluaran.filter(m => {
+        let matchSearch = !search || m.keterangan.toLowerCase().includes(search);
+        let matchMulai = !tMulai || m.tanggal >= tMulai;
+        let matchSelesai = !tSelesai || m.tanggal <= tSelesai;
+        return matchSearch && matchMulai && matchSelesai;
+    });
+
+    filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)); 
+    window.currentFilteredPengeluaran = filtered;
+    
+    let totalNominal = 0;
+    filtered.forEach(r => totalNominal += Number(r.jumlah) || 0);
+
+    // LOGIKA PAGINASI (PEMBAGIAN HALAMAN)
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPagePengeluaran) || 1;
+    
+    if (currentPagePengeluaran > totalPages) currentPagePengeluaran = totalPages;
+    if (currentPagePengeluaran < 1) currentPagePengeluaran = 1;
+
+    const startIndex = (currentPagePengeluaran - 1) * itemsPerPagePengeluaran;
+    const endIndex = startIndex + itemsPerPagePengeluaran;
+    const paginatedData = filtered.slice(startIndex, endIndex);
+
+    let html = "";
+    paginatedData.forEach(r => {
+       let fTgl = r.tanggal; 
+       if(fTgl) { 
+           let p = fTgl.split('-'); 
+           if(p.length === 3 && p[0].length === 4) {
+               fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
+           }
+       }
+       html += `
+         <tr class="hover:bg-slate-50 transition-colors">
+           <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-rose-500 mr-1.5"></i>${fTgl}</td>
+           <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.keterangan}</td>
+           <td class="text-right font-black text-rose-600 py-3 px-4 border-b">- Rp ${(Number(r.jumlah)||0).toLocaleString('id-ID')}</td>
+         </tr>
+       `;
+    });
+    tbody.innerHTML = html === "" ? '<tr><td colspan="3" class="p-6 text-center text-slate-400">Tidak ada mutasi pengeluaran.</td></tr>' : html;
+    document.getElementById("labelTotalMutasiPengeluaran").innerText = `Total: ${totalItems} Transaksi`; 
+    document.getElementById("sumTotalDanaPengeluaran").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
+
+    // Buat Tombol Navigasi Halaman
+    if(paginationContainer) {
+        if(totalItems === 0) {
+            paginationContainer.innerHTML = '';
+        } else {
+            let infoText = `Menampilkan <b class="text-slate-700">${startIndex + 1} - ${Math.min(endIndex, totalItems)}</b> dari <b class="text-slate-700">${totalItems}</b> data`;
+            let btnPrev = `<button onclick="changePagePengeluaran(${currentPagePengeluaran - 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPagePengeluaran === 1 ? "disabled" : ""}><i class="fas fa-chevron-left mr-1"></i> Prev</button>`;
+            let btnNext = `<button onclick="changePagePengeluaran(${currentPagePengeluaran + 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPagePengeluaran === totalPages ? "disabled" : ""}>Next <i class="fas fa-chevron-right ml-1"></i></button>`;
+
+            paginationContainer.innerHTML = `
+               <span class="text-xs text-slate-400 font-medium w-full md:w-auto text-center md:text-left">${infoText}</span>
+               <div class="flex items-center gap-3 w-full md:w-auto justify-center md:justify-end">
+                   ${btnPrev}
+                   <span class="text-xs text-slate-500 font-semibold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Hal. <strong class="text-rose-600">${currentPagePengeluaran}</strong> dari ${totalPages}</span>
+                   ${btnNext}
+               </div>
+            `;
+        }
+    }
+  }
+
+  function changePagePengeluaran(newPage) {
+      currentPagePengeluaran = newPage;
+      renderTabelHistoryPengeluaran();
+  }
+
+  // MENGGUNAKAN SERVER CETAK PDF HISTORY YANG SAMA DENGAN TRANSFER (Zero Backend Change!)
+  function cetakPDFHistoryPengeluaran() {
+    if (!window.currentFilteredPengeluaran || window.currentFilteredPengeluaran.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data pengeluaran untuk dicetak.', 'warning');
+    let rowsHtml = "", totalSemuaNominal = 0;
+    window.currentFilteredPengeluaran.forEach(r => { 
+       let num = Number(r.jumlah) || 0;
+       totalSemuaNominal += num; 
+       let d = new Date(r.tanggal); 
+       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : r.tanggal; 
+       
+       // Kita samarkan layoutnya menjadi 5 kolom agar mesin cetak PDF server Google (Kode.gs) tidak error!
+       rowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fTgl}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${r.keterangan}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color:#94a3b8;">-</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold; color: #ef4444;">Pengeluaran</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444; font-weight: bold;">Rp ${num.toLocaleString('id-ID')}</td></tr>`; 
+    });
+    
+    Swal.fire({ title: 'Menerbitkan PDF Resmi...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run.withSuccessHandler(res => { 
+        if(res.status) { const l = document.createElement("a"); l.href = `data:application/pdf;base64,${res.data}`; l.download = res.filename; l.click(); Swal.close(); } 
+        else Swal.fire('Gagal', res.message, 'error'); 
+    }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error'))
+    .cetakPDFHistoryServer({ 
+        tglMulai: document.getElementById("filterTglMulaiPengeluaran").value, 
+        tglSelesai: document.getElementById("filterTglSelesaiPengeluaran").value, 
+        totalSemua: totalSemuaNominal, 
+        tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
+    }, rowsHtml, 'Laporan_History_Pengeluaran.pdf');
+  }
+
   function cetakArusKasPDF() {
     if (!globalDataPemasukan || !globalDataPengeluaran) return;
     if (globalDataPemasukan.length === 0 && globalDataPengeluaran.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data arus kas untuk dicetak.', 'warning');
@@ -1035,7 +1226,7 @@ serverFunctions.forEach(funcName => {
   // ==========================================
   // SINKRONISASI OTOMATIS (Tanpa Refresh Manual)
   // ==========================================
-  function refreshBackgroundSilent() {
+ function refreshBackgroundSilent() {
     const bln = document.getElementById("filterBulan").value, thn = document.getElementById("filterTahun").value;
     const filterObj = { tipe: document.getElementById("tipePemasukan").value, tglHarian: document.getElementById("filterTglPemasukan").value, blnBulanan: document.getElementById("filterBlnPemasukan").value, tahun: thn, id_gereja: document.getElementById("filterArusKasGereja").value };
     
@@ -1055,6 +1246,9 @@ serverFunctions.forEach(funcName => {
       
       processLaporanData(res.laporan);
       inisialisasiHistoryTransfer();
+      
+      // ---> TAMBAHAN BARU SINKRONISASI PENGELUARAN <---
+      if(typeof inisialisasiHistoryPengeluaran === "function") inisialisasiHistoryPengeluaran();
 
     }).getInitialSync(bln, thn, filterObj);
   }

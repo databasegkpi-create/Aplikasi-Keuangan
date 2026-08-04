@@ -935,7 +935,7 @@ serverFunctions.forEach(funcName => {
       })
       .getRekapTahunan(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
   }
-
+  
   function renderTabelHistoryTransfer() {
     const tMulai = document.getElementById("filterTglMulai").value, tSelesai = document.getElementById("filterTglSelesai").value, search = document.getElementById("searchHistoryTransfer").value.toLowerCase(), tbody = document.getElementById("tabelBodyHistoryTransfer");
     const paginationContainer = document.getElementById("paginationMutasi");
@@ -1628,7 +1628,7 @@ serverFunctions.forEach(funcName => {
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
-function prosesImportDataLengkap() {
+  function prosesImportDataLengkap() {
     const fileInput = document.getElementById('fileImportData');
     if (!fileInput.files.length) return Swal.fire('Pilih File', 'Silakan pilih file Excel (.xlsx) atau CSV yang akan diunggah.', 'warning');
 
@@ -1716,7 +1716,7 @@ function prosesImportDataLengkap() {
     };
     reader.readAsArrayBuffer(file);
   }
-  
+
   // 1. Mendaftarkan Service Worker (PWA)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

@@ -52,8 +52,7 @@
 </div>
 
 <div id="loginPage" class="h-screen w-full flex items-center justify-center p-6 relative bg-slate-50">
-  <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1920&q=80')] bg-center bg-cover opacity-10"></div>
-  <div class="relative z-10 w-full max-w-md bg-white rounded-3xl p-8 md:p-10 shadow-xl border border-slate-100 animate__animated animate__zoomIn">
+  <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/16282306/pexels-photo-16282306.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-center bg-cover opacity-20"></div>  <div class="relative z-10 w-full max-w-md bg-white rounded-3xl p-8 md:p-10 shadow-xl border border-slate-100 animate__animated animate__zoomIn">
     <div class="text-center mb-8">
       <img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" alt="Logo GKPI" class="w-24 h-24 md:w-28 md:h-28 object-contain mx-auto mb-4 drop-shadow-md">
       <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800">Keuangan GKPI</h2>
@@ -1451,6 +1450,14 @@ serverFunctions.forEach(funcName => {
       }
     });
   }
+
+  // ==========================================
+  // FITUR: KEAMANAN KETAT (AUTO LOGOUT SAAT APP/TAB DITUTUP)
+  // ==========================================
+  window.addEventListener('beforeunload', () => {
+    // Menghapus sesi rahasia secara paksa saat tab chrome ditutup atau aplikasi di-swipe
+    sessionStorage.clear();
+  });
 </script>
 </body>
 </html>

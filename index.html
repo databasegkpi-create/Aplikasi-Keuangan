@@ -1071,37 +1071,29 @@ serverFunctions.forEach(funcName => {
     const paginationContainer = document.getElementById("paginationPengeluaran");
     
     if (!globalSemuaPengeluaran || globalSemuaPengeluaran.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-400">Belum ada data pengeluaran.</td></tr>';
+        // PERBAIKAN: colspan diubah dari 3 menjadi 4 agar tabel tidak penyok
+        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400">Belum ada data pengeluaran.</td></tr>';
         if(paginationContainer) paginationContainer.innerHTML = '';
         document.getElementById("labelTotalMutasiPengeluaran").innerText = `Total: 0 Transaksi`;
         document.getElementById("sumTotalDanaPengeluaran").innerText = "Rp 0";
         return;
     }
 
-    // ==========================================
-    // PENERJEMAH TANGGAL (MEMPERBAIKI ERROR FILTER)
-    // ==========================================
     const normalizeDate = (val) => {
         if (!val) return "";
-        let dStr = String(val).split('T')[0]; // Membuang ekor waktu (Z/T) dari Google Sheet
+        let dStr = String(val).split('T')[0];
         if (dStr.includes('/')) {
             let p = dStr.split('/');
-            // Jika formatnya DD/MM/YYYY, ubah ke YYYY-MM-DD
-            if (p.length === 3 && p[2].length === 4) {
-                return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
-            }
+            if (p.length === 3 && p[2].length === 4) { return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`; }
         }
         return dStr;
     };
 
     let filtered = globalSemuaPengeluaran.filter(m => {
         let matchSearch = !search || m.keterangan.toLowerCase().includes(search);
-        
         let normDate = normalizeDate(m.tanggal);
-        // Membandingkan tanggal yang sudah bersih
         let matchMulai = !tMulai || normDate >= tMulai;
         let matchSelesai = !tSelesai || normDate <= tSelesai;
-        
         return matchSearch && matchMulai && matchSelesai;
     });
 
@@ -1111,7 +1103,6 @@ serverFunctions.forEach(funcName => {
     let totalNominal = 0;
     filtered.forEach(r => totalNominal += Number(r.jumlah) || 0);
 
-    // LOGIKA PAGINASI (PEMBAGIAN HALAMAN)
     const totalItems = filtered.length;
     const totalPages = Math.ceil(totalItems / itemsPerPagePengeluaran) || 1;
     
@@ -1124,27 +1115,37 @@ serverFunctions.forEach(funcName => {
 
     let html = "";
     paginatedData.forEach(r => {
-       let fTgl = normalizeDate(r.tanggal); 
+       let rawDate = normalizeDate(r.tanggal); 
+       let fTgl = rawDate; 
        if(fTgl && fTgl.includes('-')) { 
            let p = fTgl.split('-'); 
            if(p.length === 3 && p[0].length === 4) {
                fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
            }
        }
+       
+       let amanKet = String(r.keterangan).replace(/'/g, "\\'"); 
+       let amanJml = Number(r.jumlah) || 0;
+
+       // PERBAIKAN: Tombol Edit & Hapus Ditambahkan di Sini
        html += `
          <tr class="hover:bg-slate-50 transition-colors">
            <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-rose-500 mr-1.5"></i>${fTgl}</td>
            <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.keterangan}</td>
-           <td class="text-right font-black text-rose-600 py-3 px-4 border-b">- Rp ${(Number(r.jumlah)||0).toLocaleString('id-ID')}</td>
+           <td class="text-right font-black text-rose-600 py-3 px-4 border-b">- Rp ${amanJml.toLocaleString('id-ID')}</td>
+           <td class="text-center py-3 px-4 border-b admin-only">
+             <button onclick="editPengeluaranDariHistory('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-brand-600 p-1" title="Edit Pengeluaran"><i class="fas fa-edit"></i></button>
+             <button onclick="hapusPengeluaranDariHistory('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus Pengeluaran"><i class="fas fa-trash-alt"></i></button>
+           </td>
          </tr>
        `;
     });
     
-    tbody.innerHTML = html === "" ? '<tr><td colspan="3" class="p-6 text-center text-rose-400">Tidak ada pengeluaran pada rentang tanggal ini.</td></tr>' : html;
+    // PERBAIKAN: colspan diubah dari 3 menjadi 4
+    tbody.innerHTML = html === "" ? '<tr><td colspan="4" class="p-6 text-center text-rose-400">Tidak ada pengeluaran pada rentang tanggal ini.</td></tr>' : html;
     document.getElementById("labelTotalMutasiPengeluaran").innerText = `Total: ${totalItems} Transaksi`; 
     document.getElementById("sumTotalDanaPengeluaran").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
 
-    // Buat Tombol Navigasi Halaman
     if(paginationContainer) {
         if(totalItems === 0) {
             paginationContainer.innerHTML = '';

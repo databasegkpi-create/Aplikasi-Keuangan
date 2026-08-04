@@ -1077,14 +1077,34 @@ serverFunctions.forEach(funcName => {
         return;
     }
 
+    // ==========================================
+    // PENERJEMAH TANGGAL (MEMPERBAIKI ERROR FILTER)
+    // ==========================================
+    const normalizeDate = (val) => {
+        if (!val) return "";
+        let dStr = String(val).split('T')[0]; // Membuang ekor waktu (Z/T) dari Google Sheet
+        if (dStr.includes('/')) {
+            let p = dStr.split('/');
+            // Jika formatnya DD/MM/YYYY, ubah ke YYYY-MM-DD
+            if (p.length === 3 && p[2].length === 4) {
+                return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+            }
+        }
+        return dStr;
+    };
+
     let filtered = globalSemuaPengeluaran.filter(m => {
         let matchSearch = !search || m.keterangan.toLowerCase().includes(search);
-        let matchMulai = !tMulai || m.tanggal >= tMulai;
-        let matchSelesai = !tSelesai || m.tanggal <= tSelesai;
+        
+        let normDate = normalizeDate(m.tanggal);
+        // Membandingkan tanggal yang sudah bersih
+        let matchMulai = !tMulai || normDate >= tMulai;
+        let matchSelesai = !tSelesai || normDate <= tSelesai;
+        
         return matchSearch && matchMulai && matchSelesai;
     });
 
-    filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)); 
+    filtered.sort((a, b) => new Date(normalizeDate(b.tanggal)) - new Date(normalizeDate(a.tanggal))); 
     window.currentFilteredPengeluaran = filtered;
     
     let totalNominal = 0;
@@ -1103,8 +1123,8 @@ serverFunctions.forEach(funcName => {
 
     let html = "";
     paginatedData.forEach(r => {
-       let fTgl = r.tanggal; 
-       if(fTgl) { 
+       let fTgl = normalizeDate(r.tanggal); 
+       if(fTgl && fTgl.includes('-')) { 
            let p = fTgl.split('-'); 
            if(p.length === 3 && p[0].length === 4) {
                fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
@@ -1118,7 +1138,8 @@ serverFunctions.forEach(funcName => {
          </tr>
        `;
     });
-    tbody.innerHTML = html === "" ? '<tr><td colspan="3" class="p-6 text-center text-slate-400">Tidak ada mutasi pengeluaran.</td></tr>' : html;
+    
+    tbody.innerHTML = html === "" ? '<tr><td colspan="3" class="p-6 text-center text-rose-400">Tidak ada pengeluaran pada rentang tanggal ini.</td></tr>' : html;
     document.getElementById("labelTotalMutasiPengeluaran").innerText = `Total: ${totalItems} Transaksi`; 
     document.getElementById("sumTotalDanaPengeluaran").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
 
@@ -1148,17 +1169,30 @@ serverFunctions.forEach(funcName => {
       renderTabelHistoryPengeluaran();
   }
 
-  // MENGGUNAKAN SERVER CETAK PDF HISTORY YANG SAMA DENGAN TRANSFER (Zero Backend Change!)
   function cetakPDFHistoryPengeluaran() {
     if (!window.currentFilteredPengeluaran || window.currentFilteredPengeluaran.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data pengeluaran untuk dicetak.', 'warning');
+    
+    // Fungsi pembantu untuk PDF
+    const normalizeDate = (val) => {
+        if (!val) return "";
+        let dStr = String(val).split('T')[0];
+        if (dStr.includes('/')) {
+            let p = dStr.split('/');
+            if (p.length === 3 && p[2].length === 4) return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+        }
+        return dStr;
+    };
+
     let rowsHtml = "", totalSemuaNominal = 0;
     window.currentFilteredPengeluaran.forEach(r => { 
        let num = Number(r.jumlah) || 0;
        totalSemuaNominal += num; 
-       let d = new Date(r.tanggal); 
-       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : r.tanggal; 
        
-       // Kita samarkan layoutnya menjadi 5 kolom agar mesin cetak PDF server Google (Kode.gs) tidak error!
+       let rawDate = normalizeDate(r.tanggal);
+       let d = new Date(rawDate); 
+       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : rawDate; 
+       
+       // Layout disamarkan menjadi 5 kolom untuk Server PDF
        rowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fTgl}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${r.keterangan}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color:#94a3b8;">-</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold; color: #ef4444;">Pengeluaran</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444; font-weight: bold;">Rp ${num.toLocaleString('id-ID')}</td></tr>`; 
     });
     

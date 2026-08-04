@@ -110,7 +110,8 @@
         
         <button onclick="bukaModalRekap()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"><i class="fas fa-file-pdf md:mr-1.5 text-slate-400"></i> <span class="hidden md:inline">Rekap PDF</span></button>
         
-        <button onclick="document.getElementById('modalImport').classList.remove('hidden'); document.getElementById('modalImport').classList.remove('opacity-0');" class="admin-only bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-indigo-100 transition-all"><i class="fas fa-file-import md:mr-1.5"></i> <span class="hidden md:inline">Import CSV</span></button>
+<!-- TOMBOL IMPORT DENGAN KEAMANAN PIN -->
+<button onclick="bukaModalImportBerpassword()" class="admin-only bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-indigo-100 transition-all"><i class="fas fa-file-import md:mr-1.5"></i> <span class="hidden md:inline">Import CSV</span></button>
         
         <button onclick="openModalSetoran()" class="admin-only bg-brand-600 text-white px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm shadow-brand-500/30 hover:bg-brand-700 transition-all"><i class="fas fa-plus md:mr-1.5"></i> <span class="hidden md:inline">Buat Setoran</span></button>
         <button onclick="handleLogout()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-2" title="Keluar"><i class="fas fa-power-off text-xs"></i></button>
@@ -1405,6 +1406,47 @@ serverFunctions.forEach(funcName => {
         deferredPrompt = null;
       });
     }
+  }
+  // ==========================================
+  // FITUR: KEAMANAN PIN UNTUK IMPORT DATA
+  // ==========================================
+  function bukaModalImportBerpassword() {
+    Swal.fire({
+      title: '<i class="fas fa-lock text-rose-500 mb-2 text-3xl"></i><br>Otorisasi Khusus',
+      html: '<p class="text-xs text-slate-500 font-medium">Masukkan PIN rahasia untuk menggunakan fitur Import Data Massal.</p>',
+      input: 'password',
+      inputPlaceholder: 'Masukkan PIN...',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off',
+        maxlength: 10
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Buka Akses',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#7c3aed',
+      cancelButtonColor: '#94a3b8',
+      preConfirm: (pin) => {
+        // GANTI "123456" DI BAWAH INI DENGAN PIN YANG ANDA INGINKAN
+        if (pin === '112233') {
+          return true;
+        } else {
+          Swal.showValidationMessage('PIN Salah! Akses ditolak.');
+          return false;
+        }
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Jika PIN benar, buka jendela modal Import
+        const modal = document.getElementById('modalImport');
+        modal.classList.remove('hidden');
+        
+        // Sedikit jeda agar animasi transisinya mulus
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+        }, 10);
+      }
+    });
   }
 </script>
 </body>

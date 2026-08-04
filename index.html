@@ -1124,28 +1124,18 @@ serverFunctions.forEach(funcName => {
 
     let html = "";
     paginatedData.forEach(r => {
-       let rawDate = normalizeDate(r.tanggal); // Tanggal asli YYYY-MM-DD
-       let fTgl = rawDate; 
+       let fTgl = normalizeDate(r.tanggal); 
        if(fTgl && fTgl.includes('-')) { 
            let p = fTgl.split('-'); 
            if(p.length === 3 && p[0].length === 4) {
                fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
            }
        }
-       
-       // Escape string untuk mencegah error jika keterangan ada tanda kutipnya
-       let amanKet = String(r.keterangan).replace(/'/g, "\\'"); 
-       let amanJml = Number(r.jumlah) || 0;
-
        html += `
          <tr class="hover:bg-slate-50 transition-colors">
            <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-rose-500 mr-1.5"></i>${fTgl}</td>
            <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.keterangan}</td>
-           <td class="text-right font-black text-rose-600 py-3 px-4 border-b">- Rp ${amanJml.toLocaleString('id-ID')}</td>
-           <td class="text-center py-3 px-4 border-b admin-only">
-             <button onclick="editPengeluaranDariHistory('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-brand-600 p-1" title="Edit Pengeluaran"><i class="fas fa-edit"></i></button>
-             <button onclick="hapusPengeluaranDariHistory('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus Pengeluaran"><i class="fas fa-trash-alt"></i></button>
-           </td>
+           <td class="text-right font-black text-rose-600 py-3 px-4 border-b">- Rp ${(Number(r.jumlah)||0).toLocaleString('id-ID')}</td>
          </tr>
        `;
     });
@@ -1220,7 +1210,7 @@ serverFunctions.forEach(funcName => {
         tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
     }, rowsHtml, 'Laporan_History_Pengeluaran.pdf');
   }
-
+  
   function cetakArusKasPDF() {
     if (!globalDataPemasukan || !globalDataPengeluaran) return;
     if (globalDataPemasukan.length === 0 && globalDataPengeluaran.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data arus kas untuk dicetak.', 'warning');

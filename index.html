@@ -251,11 +251,13 @@
       <div id="pageHistoryTransfer" class="hidden space-y-6 animate__animated animate__fadeIn">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
           <div class="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto">
-             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">Dari:</span><input type="date" id="filterTglMulai" onchange="renderTabelHistoryTransfer()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
-             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">S/d:</span><input type="date" id="filterTglSelesai" onchange="renderTabelHistoryTransfer()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+             <!-- PERUBAHAN: Tambah currentPageMutasi=1; pada onchange -->
+             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">Dari:</span><input type="date" id="filterTglMulai" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">S/d:</span><input type="date" id="filterTglSelesai" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
           </div>
           <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
-            <div class="relative w-full md:w-72"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryTransfer" oninput="renderTabelHistoryTransfer()" placeholder="Cari nama gereja / jenis setoran..." class="w-full py-2.5 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500 transition-all"></div>
+            <!-- PERUBAHAN: Tambah currentPageMutasi=1; pada oninput -->
+            <div class="relative w-full md:w-72"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryTransfer" oninput="currentPageMutasi=1; renderTabelHistoryTransfer()" placeholder="Cari nama gereja / jenis setoran..." class="w-full py-2.5 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500 transition-all"></div>
             <button onclick="cetakPDFHistoryTransfer()" class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-900 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-print mr-1.5"></i> Cetak PDF</button>
           </div>
         </div>
@@ -265,8 +267,10 @@
               <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold"><i class="fas fa-wallet"></i></div>
            </div>
         </div>
+        
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4"><h3 class="font-bold text-slate-800 text-base"><i class="fas fa-exchange-alt text-brand-500 mr-2"></i>Daftar Mutasi Transfer Masuk Jemaat</h3><p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="labelTotalMutasi">Total: 0 Transaksi</p></div>
+           
            <div class="table-responsive">
               <table class="w-full text-left whitespace-nowrap clean-table">
                 <thead class="bg-slate-50">
@@ -282,9 +286,14 @@
                 <tbody id="tabelBodyHistoryTransfer"></tbody>
               </table>
            </div>
+           
+           <!-- PERUBAHAN: Wadah navigasi paginasi (Maju/Mundur) -->
+           <div id="paginationMutasi" class="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4"></div>
+           
         </div>
       </div>
 
+      
       <!-- ================= 5. PAGE PENGGAJIAN PENDETA ================= -->
       <div id="pagePenggajian" class="hidden space-y-6 animate__animated animate__fadeIn">
        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -533,6 +542,9 @@ const bulanArr = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli"
 let currentRiwayatGereja = [], globalDataPemasukan = [], globalDataPengeluaran = [], globalBelumSetorIDs = [], globalDataRekapDirektori = [];
 let globalDataSemuaMutasi = []; 
 let globalDataPenggajian = [];
+  // TAMBAHKAN DUA VARIABEL INI UNTUK PAGINASI:
+let currentPageMutasi = 1;
+const itemsPerPageMutasi = 25;
 const currentYear = new Date().getFullYear();
 let currentGerejaIdModal = null; 
 const swalColor = '#7c3aed';
@@ -871,7 +883,13 @@ serverFunctions.forEach(funcName => {
 
   function renderTabelHistoryTransfer() {
     const tMulai = document.getElementById("filterTglMulai").value, tSelesai = document.getElementById("filterTglSelesai").value, search = document.getElementById("searchHistoryTransfer").value.toLowerCase(), tbody = document.getElementById("tabelBodyHistoryTransfer");
-    if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) return tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada data setoran.</td></tr>';
+    const paginationContainer = document.getElementById("paginationMutasi");
+    
+    if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada data setoran.</td></tr>';
+        if(paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
     
     const parseNom = (v) => Number(String(v).replace(/[^0-9,-]+/g, '').replace(',', '.')) || 0;
     let expandedMutasi = [];
@@ -881,18 +899,34 @@ serverFunctions.forEach(funcName => {
     });
 
     let filtered = expandedMutasi.filter(m => (!search || m.namaGereja.toLowerCase().includes(search) || m.jenis.toLowerCase().includes(search)) && (!tMulai || m.tanggalTransfer >= tMulai) && (!tSelesai || m.tanggalTransfer <= tSelesai));
-    filtered.sort((a, b) => new Date(b.tanggalTransfer) - new Date(a.tanggalTransfer)); window.currentFilteredMutasi = filtered;
+    filtered.sort((a, b) => new Date(b.tanggalTransfer) - new Date(a.tanggalTransfer)); 
+    window.currentFilteredMutasi = filtered;
     
-    let totalNominal = 0, html = "";
-    filtered.forEach(r => {
-       totalNominal += r.nominal;
+    let totalNominal = 0;
+    filtered.forEach(r => totalNominal += r.nominal);
+
+    // ==========================================
+    // LOGIKA PAGINASI (PEMBAGIAN HALAMAN)
+    // ==========================================
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPageMutasi) || 1;
+    
+    if (currentPageMutasi > totalPages) currentPageMutasi = totalPages;
+    if (currentPageMutasi < 1) currentPageMutasi = 1;
+
+    const startIndex = (currentPageMutasi - 1) * itemsPerPageMutasi;
+    const endIndex = startIndex + itemsPerPageMutasi;
+    const paginatedData = filtered.slice(startIndex, endIndex);
+
+    let html = "";
+    paginatedData.forEach(r => {
        let fTgl = r.tanggalTransfer; 
        if(fTgl) { 
            let p = fTgl.split('-'); 
            if(p.length === 3) fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
        }
        html += `
-         <tr>
+         <tr class="hover:bg-slate-50 transition-colors">
            <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-brand-500 mr-1.5"></i>${fTgl}</td>
            <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.namaGereja}</td>
            <td class="text-slate-600 py-3 px-4 border-b">${r.periode}</td>
@@ -906,7 +940,36 @@ serverFunctions.forEach(funcName => {
        `;
     });
     tbody.innerHTML = html === "" ? '<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada mutasi transfer.</td></tr>' : html;
-    document.getElementById("labelTotalMutasi").innerText = `Total: ${filtered.length} Transaksi`; document.getElementById("sumTotalDanaTransfer").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
+    document.getElementById("labelTotalMutasi").innerText = `Total: ${totalItems} Transaksi`; 
+    document.getElementById("sumTotalDanaTransfer").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
+
+    // Buat Tombol Paginasi
+    if(paginationContainer) {
+        if(totalItems === 0) {
+            paginationContainer.innerHTML = '';
+        } else {
+            let infoText = `Menampilkan <b class="text-slate-700">${startIndex + 1} - ${Math.min(endIndex, totalItems)}</b> dari <b class="text-slate-700">${totalItems}</b> data`;
+            
+            let btnPrev = `<button onclick="changePageMutasi(${currentPageMutasi - 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPageMutasi === 1 ? "disabled" : ""}><i class="fas fa-chevron-left mr-1"></i> Prev</button>`;
+            
+            let btnNext = `<button onclick="changePageMutasi(${currentPageMutasi + 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPageMutasi === totalPages ? "disabled" : ""}>Next <i class="fas fa-chevron-right ml-1"></i></button>`;
+
+            paginationContainer.innerHTML = `
+               <span class="text-xs text-slate-400 font-medium w-full md:w-auto text-center md:text-left">${infoText}</span>
+               <div class="flex items-center gap-3 w-full md:w-auto justify-center md:justify-end">
+                   ${btnPrev}
+                   <span class="text-xs text-slate-500 font-semibold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Hal. <strong class="text-brand-600">${currentPageMutasi}</strong> dari ${totalPages}</span>
+                   ${btnNext}
+               </div>
+            `;
+        }
+    }
+  }
+
+  // FUNGSI BARU UNTUK BERPINDAH HALAMAN
+  function changePageMutasi(newPage) {
+      currentPageMutasi = newPage;
+      renderTabelHistoryTransfer();
   }
 
   function cetakPDFHistoryTransfer() {

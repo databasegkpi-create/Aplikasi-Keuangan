@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -150,6 +151,19 @@
               </div>
            </div>
         </div>
+        <!-- ========================================== -->
+        <!-- PENAMBAHAN: KOTAK GRAFIK SETORAN WILAYAH -->
+        <!-- ========================================== -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
+           <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-slate-800 text-base"><i class="fas fa-chart-bar text-brand-500 mr-2"></i>Grafik Total Setoran per Wilayah</h3>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">Bulan Terpilih</span>
+           </div>
+           <div class="relative h-64 w-full">
+              <canvas id="chartWilayah"></canvas>
+           </div>
+        </div>
+        <!-- ========================================== -->
 
         <div>
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
@@ -802,6 +816,11 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     document.getElementById("totalSaldoHeader").setAttribute("data-balance", res.saldoTotal); renderTotalBalance();
     globalDataPemasukan = res.tabelPemasukan; globalDataPengeluaran = res.tabelPengeluaran;
     let filteredPemasukan = res.tabelPemasukan, filteredPengeluaran = res.tabelPengeluaran;
+    // >>> PENAMBAHAN: Panggil fungsi pembuat grafik di sini <<<
+    if(typeof renderGrafikWilayah === "function") {
+        renderGrafikWilayah(filteredPemasukan);
+    }
+    // =========================================================
     const searchKeyword = document.getElementById("searchArusKas") ? document.getElementById("searchArusKas").value.toLowerCase() : "";
     if(searchKeyword) { filteredPemasukan = filteredPemasukan.filter(r => r.nama_gereja.toLowerCase().includes(searchKeyword) || r.jenis.toLowerCase().includes(searchKeyword) || r.periode_setoran.toLowerCase().includes(searchKeyword)); filteredPengeluaran = filteredPengeluaran.filter(r => r.keterangan.toLowerCase().includes(searchKeyword)); }
     
@@ -1939,6 +1958,82 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     // Menghapus sesi rahasia secara paksa saat tab chrome ditutup atau aplikasi di-swipe
     sessionStorage.clear();
   });
+
+  // ==========================================
+  // FITUR BARU: GRAFIK CHART.JS
+  // ==========================================
+  let grafikSetoranWilayah = null;
+
+  function renderGrafikWilayah(filteredPemasukan) {
+      // 1. Kumpulkan total setoran berdasarkan Wilayah
+      let rekapWilayah = {};
+      filteredPemasukan.forEach(r => {
+          let w = r.wilayah || "Lainnya";
+          if (!rekapWilayah[w]) rekapWilayah[w] = 0;
+          rekapWilayah[w] += Number(r.jumlah) || 0;
+      });
+
+      // 2. Urutkan label wilayah (misal: 1, 2, 3... dst)
+      let labelWilayah = Object.keys(rekapWilayah).sort((a,b) => String(a).localeCompare(String(b), undefined, {numeric: true}));
+      let dataNominal = labelWilayah.map(l => rekapWilayah[l]);
+
+      // 3. Gambar grafiknya
+      const ctx = document.getElementById('chartWilayah');
+      if (!ctx) return; // Mencegah error jika canvas belum diload
+
+      // Hancurkan grafik lama sebelum menggambar yang baru (Mencegah tumpang tindih)
+      if (grafikSetoranWilayah != null) {
+          grafikSetoranWilayah.destroy();
+      }
+
+      grafikSetoranWilayah = new Chart(ctx.getContext('2d'), {
+          type: 'bar',
+          data: {
+              labels: labelWilayah.map(l => "Wil " + l),
+              datasets: [{
+                  label: 'Total Setoran (Rp)',
+                  data: dataNominal,
+                  backgroundColor: '#8b5cf6', // Warna Ungu Brand Anda
+                  hoverBackgroundColor: '#6d28d9',
+                  borderRadius: 6,
+                  barThickness: 'flex',
+                  maxBarThickness: 40
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                      callbacks: {
+                          label: function(context) {
+                              return ' Rp ' + context.parsed.y.toLocaleString('id-ID');
+                          }
+                      }
+                  }
+              },
+              scales: {
+                  y: {
+                      beginAtZero: true,
+                      grid: { color: '#f1f5f9' },
+                      ticks: {
+                          callback: function(value) {
+                              // Mempersingkat angka panjang menjadi Juta (Jt)
+                              if(value >= 1000000) return (value/1000000) + ' Jt';
+                              return value;
+                          },
+                          font: { size: 10 }
+                      }
+                  },
+                  x: {
+                      grid: { display: false },
+                      ticks: { font: { size: 10, weight: 'bold' } }
+                  }
+              }
+          }
+      });
+  }
 </script>
 </body>
 </html>

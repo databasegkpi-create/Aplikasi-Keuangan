@@ -248,20 +248,36 @@
         </div>
       </div>
 
-      <!-- ================= 4. PAGE HISTORY TRANSFER ================= -->
+     <!-- ================= 4. PAGE HISTORY TRANSFER ================= -->
       <div id="pageHistoryTransfer" class="hidden space-y-6 animate__animated animate__fadeIn">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
-          <div class="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto">
-             <!-- PERUBAHAN: Tambah currentPageMutasi=1; pada onchange -->
-             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">Dari:</span><input type="date" id="filterTglMulai" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
-             <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">S/d:</span><input type="date" id="filterTglSelesai" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+        
+        <!-- PERBAIKAN: PENAMBAHAN 2 FILTER BARU (WILAYAH & JENIS SETORAN) -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-3 items-center justify-between">
+          <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+             <div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500">Dari:</span><input type="date" id="filterTglMulai" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+             <div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500">S/d:</span><input type="date" id="filterTglSelesai" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
+             
+             <select id="filterHistoryWilayah" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700 cursor-pointer w-full md:w-auto">
+                <option value="">-- Semua Wilayah --</option>
+             </select>
+             
+             <select id="filterHistoryJenis" onchange="currentPageMutasi=1; renderTabelHistoryTransfer()" class="p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700 cursor-pointer w-full md:w-auto">
+                 <option value="">-- Semua Jenis Setoran --</option>
+                 <option value="Bakti Bulanan">Bakti Bulanan</option>
+                 <option value="Persembahan II">Persembahan II</option>
+                 <option value="Amplop Paskah">Amplop Paskah</option>
+                 <option value="Amplop Pentakosta">Amplop Pentakosta</option>
+                 <option value="Amplop HUT">Amplop HUT</option>
+                 <option value="Amplop Natal">Amplop Natal</option>
+                 <option value="Lainnya">Setoran Lainnya</option>
+             </select>
           </div>
-          <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
-            <!-- PERUBAHAN: Tambah currentPageMutasi=1; pada oninput -->
-            <div class="relative w-full md:w-72"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryTransfer" oninput="currentPageMutasi=1; renderTabelHistoryTransfer()" placeholder="Cari nama gereja / jenis setoran..." class="w-full py-2.5 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500 transition-all"></div>
-            <button onclick="cetakPDFHistoryTransfer()" class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-900 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-print mr-1.5"></i> Cetak PDF</button>
+          <div class="flex flex-col md:flex-row gap-2 w-full xl:w-auto mt-2 xl:mt-0">
+            <div class="relative w-full md:w-64"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryTransfer" oninput="currentPageMutasi=1; renderTabelHistoryTransfer()" placeholder="Cari nama gereja / jenis setoran..." class="w-full py-2 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500 transition-all"></div>
+            <button onclick="cetakPDFHistoryTransfer()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-900 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-print mr-1.5"></i> Cetak PDF</button>
           </div>
         </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
               <div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Dana Masuk (Filter)</p><h3 class="text-xl font-black text-emerald-600 mt-0.5" id="sumTotalDanaTransfer">Rp 0</h3></div>
@@ -288,11 +304,11 @@
               </table>
            </div>
            
-           <!-- PERUBAHAN: Wadah navigasi paginasi (Maju/Mundur) -->
            <div id="paginationMutasi" class="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4"></div>
            
         </div>
       </div>
+      
       <!-- ================= 4.5 PAGE HISTORY PENGELUARAN ================= -->
       <div id="pageHistoryPengeluaran" class="hidden space-y-6 animate__animated animate__fadeIn">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -739,7 +755,7 @@ serverFunctions.forEach(funcName => {
     else if(tab === 'penggajian') { document.getElementById('pagePenggajian').classList.remove('hidden'); document.getElementById('btnPenggajian').classList.add('nav-active'); muatDataPenggajian(); }
   }
 
-  function inisialisasiData() {
+function inisialisasiData() {
     showLoader("Sinkronisasi Server...", "Mengambil data terbaru Sinode GKPI");
     const bln = document.getElementById("filterBulan").value, thn = document.getElementById("filterTahun").value;
     const filterObj = { tipe: document.getElementById("tipePemasukan").value, tglHarian: document.getElementById("filterTglPemasukan").value, blnBulanan: document.getElementById("filterBlnPemasukan").value, tahun: thn, id_gereja: document.getElementById("filterArusKasGereja").value };
@@ -749,7 +765,16 @@ serverFunctions.forEach(funcName => {
       let wil = [...new Set(masterDataGereja.map(i => i.wilayah))].sort();
       let optWil = '<option value="">-- Semua Wilayah --</option>' + wil.map(w => `<option value="${w}">${w}</option>`).join("");
       let optGrj = '<option value="">-- Semua Gereja --</option>' + masterDataGereja.map(g => `<option value="${g.id}">${g.nama} (${g.wilayah})</option>`).join("");
-      document.getElementById("formSetoranWilayah").innerHTML = optWil; document.getElementById("rekapWilayah").innerHTML = optWil; document.getElementById("filterDirWilayah").innerHTML = optWil; document.getElementById("filterArusKasWilayah").innerHTML = optWil; document.getElementById("filterArusKasGereja").innerHTML = optGrj;
+      
+      document.getElementById("formSetoranWilayah").innerHTML = optWil; 
+      document.getElementById("rekapWilayah").innerHTML = optWil; 
+      document.getElementById("filterDirWilayah").innerHTML = optWil; 
+      document.getElementById("filterArusKasWilayah").innerHTML = optWil; 
+      
+      // >>> PENAMBAHAN: Mengisi Dropdown Wilayah di History Transfer <<<
+      if(document.getElementById("filterHistoryWilayah")) document.getElementById("filterHistoryWilayah").innerHTML = optWil; 
+      
+      document.getElementById("filterArusKasGereja").innerHTML = optGrj;
       filterGerejaSetoran();
       
       let belumSetor = res.dashboard; globalBelumSetorIDs = belumSetor.map(i => i.id.toString());
@@ -937,7 +962,15 @@ serverFunctions.forEach(funcName => {
   }
   
   function renderTabelHistoryTransfer() {
-    const tMulai = document.getElementById("filterTglMulai").value, tSelesai = document.getElementById("filterTglSelesai").value, search = document.getElementById("searchHistoryTransfer").value.toLowerCase(), tbody = document.getElementById("tabelBodyHistoryTransfer");
+    const tMulai = document.getElementById("filterTglMulai").value;
+    const tSelesai = document.getElementById("filterTglSelesai").value;
+    const search = document.getElementById("searchHistoryTransfer").value.toLowerCase();
+    
+    // PENAMBAHAN: Menangkap nilai dari dropdown Wilayah dan Jenis
+    const wil = document.getElementById("filterHistoryWilayah").value;
+    const jen = document.getElementById("filterHistoryJenis").value;
+    
+    const tbody = document.getElementById("tabelBodyHistoryTransfer");
     const paginationContainer = document.getElementById("paginationMutasi");
     
     if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
@@ -948,9 +981,6 @@ serverFunctions.forEach(funcName => {
     
     const parseNom = (v) => Number(String(v).replace(/[^0-9,-]+/g, '').replace(',', '.')) || 0;
     
-    // ==========================================
-    // PENERJEMAH TANGGAL (FIX BUG HISTORY)
-    // ==========================================
     const normalizeDate = (val) => {
         if (!val) return "";
         let dStr = String(val).split('T')[0].split(' ')[0];
@@ -967,7 +997,12 @@ serverFunctions.forEach(funcName => {
 
     let expandedMutasi = [];
     globalDataSemuaMutasi.forEach(item => {
-       let grj = masterDataGereja.find(g => String(g.id) === String(item.id)), namaGrj = grj ? grj.nama : "Gereja ID: " + item.id, ket = item.ketLainnya ? String(item.ketLainnya).trim() : "", teksLainnya = (ket !== "" && ket !== "-") ? `Lainnya (${ket})` : "Setoran Lainnya";
+       let grj = masterDataGereja.find(g => String(g.id) === String(item.id));
+       let namaGrj = grj ? grj.nama : "Gereja ID: " + item.id;
+       let wilGrj = grj ? grj.wilayah : ""; // Mengikat info Wilayah ke dalam objek
+       
+       let ket = item.ketLainnya ? String(item.ketLainnya).trim() : "";
+       let teksLainnya = (ket !== "" && ket !== "-") ? `Lainnya (${ket})` : "Setoran Lainnya";
        
        [{ jenis: "Bakti Bulanan", nominal: parseNom(item.bakti), tgl: normalizeDate(item.tglBakti) }, 
         { jenis: "Persembahan II", nominal: parseNom(item.pers2), tgl: normalizeDate(item.tglPers2) }, 
@@ -976,11 +1011,33 @@ serverFunctions.forEach(funcName => {
         { jenis: "Amplop Pentakosta", nominal: parseNom(item.pentakosta), tgl: normalizeDate(item.tglPentakosta) }, 
         { jenis: "Amplop Natal", nominal: parseNom(item.natal), tgl: normalizeDate(item.tglNatal) }, 
         { jenis: teksLainnya, nominal: parseNom(item.lainnya), tgl: normalizeDate(item.tglLainnya) }].forEach(sub => { 
-           if (sub.nominal > 0 && sub.tgl) expandedMutasi.push({ namaGereja: namaGrj, periode: item.bulan + " " + item.tahun, jenis: sub.jenis, nominal: sub.nominal, tanggalTransfer: sub.tgl, id_gereja: item.id, bulan: item.bulan, tahun: item.tahun }); 
+           if (sub.nominal > 0 && sub.tgl) {
+               expandedMutasi.push({ 
+                   namaGereja: namaGrj, 
+                   wilayah: wilGrj, 
+                   periode: item.bulan + " " + item.tahun, 
+                   jenis: sub.jenis, 
+                   nominal: sub.nominal, 
+                   tanggalTransfer: sub.tgl, 
+                   id_gereja: item.id, 
+                   bulan: item.bulan, 
+                   tahun: item.tahun 
+               });
+           }
        });
     });
 
-    let filtered = expandedMutasi.filter(m => (!search || m.namaGereja.toLowerCase().includes(search) || m.jenis.toLowerCase().includes(search)) && (!tMulai || m.tanggalTransfer >= tMulai) && (!tSelesai || m.tanggalTransfer <= tSelesai));
+    // PENAMBAHAN LOGIKA FILTER: Menyaring berdasarkan Tgl, Search, Wilayah, dan Jenis Setoran
+    let filtered = expandedMutasi.filter(m => {
+        let matchSearch = !search || m.namaGereja.toLowerCase().includes(search) || m.jenis.toLowerCase().includes(search);
+        let matchMulai = !tMulai || m.tanggalTransfer >= tMulai;
+        let matchSelesai = !tSelesai || m.tanggalTransfer <= tSelesai;
+        let matchWil = !wil || String(m.wilayah) === String(wil);
+        let matchJen = !jen || m.jenis.includes(jen); // Memakai includes agar "Lainnya (Pembangunan)" tetap masuk ke kategori "Lainnya"
+        
+        return matchSearch && matchMulai && matchSelesai && matchWil && matchJen;
+    });
+
     filtered.sort((a, b) => new Date(b.tanggalTransfer) - new Date(a.tanggalTransfer)); 
     window.currentFilteredMutasi = filtered;
     
@@ -1018,7 +1075,7 @@ serverFunctions.forEach(funcName => {
          </tr>
        `;
     });
-    tbody.innerHTML = html === "" ? '<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada mutasi transfer pada tanggal ini.</td></tr>' : html;
+    tbody.innerHTML = html === "" ? '<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada mutasi transfer yang cocok.</td></tr>' : html;
     document.getElementById("labelTotalMutasi").innerText = `Total: ${totalItems} Transaksi`; 
     document.getElementById("sumTotalDanaTransfer").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
 
@@ -1027,7 +1084,9 @@ serverFunctions.forEach(funcName => {
             paginationContainer.innerHTML = '';
         } else {
             let infoText = `Menampilkan <b class="text-slate-700">${startIndex + 1} - ${Math.min(endIndex, totalItems)}</b> dari <b class="text-slate-700">${totalItems}</b> data`;
+            
             let btnPrev = `<button onclick="changePageMutasi(${currentPageMutasi - 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPageMutasi === 1 ? "disabled" : ""}><i class="fas fa-chevron-left mr-1"></i> Prev</button>`;
+            
             let btnNext = `<button onclick="changePageMutasi(${currentPageMutasi + 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPageMutasi === totalPages ? "disabled" : ""}>Next <i class="fas fa-chevron-right ml-1"></i></button>`;
 
             paginationContainer.innerHTML = `
@@ -1041,7 +1100,6 @@ serverFunctions.forEach(funcName => {
         }
     }
   }
-  
   // FUNGSI BARU UNTUK BERPINDAH HALAMAN
   function changePageMutasi(newPage) {
       currentPageMutasi = newPage;

@@ -1479,11 +1479,13 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
 
   function bukaModalRekap() { document.getElementById("modalRekap").classList.remove("hidden"); }
 
-  // ==========================================
+ // ==========================================
   // HELPER PEMBUAT BARIS REKAP (CEPAT & BERSIH)
   // ==========================================
   function buildRekapTbody(w, semuaSetoran, thn, hariIni) {
-      const gerejaWilayah = masterDataGereja.filter(g => String(g.wilayah) === w);
+      // PERBAIKAN: Tambahkan String(w) agar Angka dari database dan Teks bisa cocok 100%
+      const gerejaWilayah = masterDataGereja.filter(g => String(g.wilayah) === String(w));
+      
       let html = `<tr><td></td><td colspan="29" style="text-align: left; font-weight: bold; font-size: 9px; padding-left: 5px; background-color: #f8fafc; border-top: 2px solid #cbd5e1;">WIL - ${w} (GEREJA: ${gerejaWilayah.length})</td></tr>`;
       
       gerejaWilayah.forEach((g, index) => {
@@ -1546,7 +1548,6 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       });
       return html;
   }
-
   // ==========================================
   // RENDER LAYAR REKAPITULASI (SUPPORT 'SEMUA')
   // ==========================================

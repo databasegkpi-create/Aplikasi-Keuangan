@@ -2047,6 +2047,56 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           }
       });
   }
+
+  // ==========================================
+  // FITUR: SMART SORT TABEL (KLIK JUDUL KOLOM)
+  // ==========================================
+  document.addEventListener('click', function (e) {
+    // Pastikan yang diklik adalah judul kolom (<th>) di dalam tabel
+    let th = e.target.closest('th');
+    if (!th || !th.closest('.clean-table')) return;
+
+    const table = th.closest('table');
+    const tbody = table.querySelector('tbody');
+    
+    // Jangan lakukan sorting jika tabel sedang loading atau kosong
+    if (!tbody || tbody.rows.length === 0 || (tbody.rows.length === 1 && tbody.rows[0].cells[0].colSpan > 1)) return;
+
+    const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+    const idx = Array.from(th.parentNode.children).indexOf(th);
+    const isAsc = th.classList.contains('asc');
+    
+    // Bersihkan ikon panah di semua kolom lain agar rapi
+    table.querySelectorAll('th').forEach(h => { 
+        h.classList.remove('asc', 'desc'); 
+        h.innerHTML = h.innerHTML.replace(' ↑', '').replace(' ↓', ''); 
+    });
+    
+    // Pasang ikon panah (atas/bawah) pada kolom yang sedang diklik
+    th.classList.add(isAsc ? 'desc' : 'asc');
+    th.innerHTML += isAsc ? ' ↓' : ' ↑';
+
+    // Logika Pembanding Cerdas (Mendeteksi Teks vs Nominal Rupiah)
+    const comparer = (idx, asc) => (a, b) => {
+        let v1 = getCellValue(asc ? a : b, idx).trim();
+        let v2 = getCellValue(asc ? b : a, idx).trim();
+        
+        let n1 = Number(v1.replace(/[^0-9,-]+/g, '').replace(',', '.'));
+        let n2 = Number(v2.replace(/[^0-9,-]+/g, '').replace(',', '.'));
+        
+        // Jika isinya memuat 'Rp' atau berupa angka murni, urutkan berdasarkan nominal angkanya
+        if ((v1.includes('Rp') || (!isNaN(n1) && v1 !== '')) && (v2.includes('Rp') || (!isNaN(n2) && v2 !== ''))) {
+            return n1 - n2;
+        }
+        // Jika isinya berupa Teks/Huruf (Nama Jemaat, Keterangan, dll)
+        return v1.localeCompare(v2);
+    };
+
+    // Eksekusi pengurutan baris secara instan
+    Array.from(tbody.querySelectorAll('tr'))
+        .sort(comparer(idx, !isAsc))
+        .forEach(tr => tbody.appendChild(tr));
+  });
 </script>
 </body>
 </html>

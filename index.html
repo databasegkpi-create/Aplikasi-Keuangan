@@ -626,7 +626,7 @@ window.google = {
 const serverFunctions = [
   "cekLogin", "getInitialSync", "getLaporanKeuangan", "kirimPesanFonnte",
   "broadcastMassalFonnte", "getRekapTahunan", "getRiwayatGereja", "cetakPDFServer",
-  "cetakPDFHistoryServer", "cetakPDFArusKasServer", "cetakPDFRekapServer",
+  "cetakPDFHistoryServer", "cetakPDFArusKasServer", "cetakPDFRekapServer", "cetakPDFRekapSemuaServer",
   "hapusSetoran", "updateDataGereja", "simpanData", "updateSetoran",
   "buatDanKirimKwitansi", "simpanPengeluaran", "getPenggajianData",
   "generateGajiMassal", "simpanGajiPendeta", "buatDanKirimSlipGaji",
@@ -767,7 +767,8 @@ function inisialisasiData() {
       let optGrj = '<option value="">-- Semua Gereja --</option>' + masterDataGereja.map(g => `<option value="${g.id}">${g.nama} (${g.wilayah})</option>`).join("");
       
       document.getElementById("formSetoranWilayah").innerHTML = optWil; 
-      document.getElementById("rekapWilayah").innerHTML = optWil; 
+     let optRekapWil = '<option value="">-- Pilih Wilayah --</option><option value="semua">🌍 SEMUA WILAYAH (Cetak Massal)</option>' + wil.map(w => `<option value="${w}">Wilayah ${w}</option>`).join("");
+document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       document.getElementById("filterDirWilayah").innerHTML = optWil; 
       document.getElementById("filterArusKasWilayah").innerHTML = optWil; 
       
@@ -1478,26 +1479,15 @@ function inisialisasiData() {
 
   function bukaModalRekap() { document.getElementById("modalRekap").classList.remove("hidden"); }
 
-  function generateTabelRekap() {
-    const wil = document.getElementById("rekapWilayah").value, thn = document.getElementById("rekapTahun").value;
-    document.getElementById("labelTahun").innerText = thn; 
-    document.getElementById("labelTanggal").innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-    
-    if(!wil) return document.querySelector("#tabelRekapPdf tbody").innerHTML = '<tr><td colspan="30" class="text-center p-6 text-slate-400">Pilih Wilayah terlebih dahulu.</td></tr>'; 
-    Swal.fire({ title: 'Menyusun Data', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    
-    google.script.run.withSuccessHandler(semuaSetoran => {
-      const gerejaWilayah = masterDataGereja.filter(g => String(g.wilayah) === wil);
-      let theadHtml = `<tr><th rowspan="2">NO</th><th rowspan="2" style="width: 180px;">RESORT / JEMAAT KHUSUS</th><th colspan="2">JANUARI</th><th colspan="2">FEBRUARI</th><th colspan="2">MARET</th><th colspan="2">APRIL</th><th rowspan="2">AMPLOP<br>PASKAH</th><th colspan="2">MEI</th><th colspan="2">JUNI</th><th rowspan="2">AMPLOP<br>PENTAKOSTA</th><th colspan="2">JULI</th><th colspan="2">AGUSTUS</th><th rowspan="2">AMPLOP<br>HUT</th><th colspan="2">SEPTEMBER</th><th colspan="2">OKTOBER</th><th colspan="2">NOVEMBER</th><th colspan="2">DESEMBER</th><th rowspan="2">AMPLOP<br>NATAL</th></tr><tr>`;
-      for(let i=0; i<12; i++) { theadHtml += `<th>BAKTI<br>BULANAN</th><th>PERS - II</th>`; }
-      theadHtml += `</tr>`; 
-      document.querySelector("#tabelRekapPdf thead").innerHTML = theadHtml;
-      
-      let tbodyHtml = `<tr><td></td><td colspan="29" style="text-align: left; font-weight: bold; font-size: 9px; padding-left: 5px; background-color: #f8fafc;">WIL - ${wil} (GEREJA: ${gerejaWilayah.length})</td></tr>`;
-      const hariIni = new Date(); 
+  // ==========================================
+  // HELPER PEMBUAT BARIS REKAP (CEPAT & BERSIH)
+  // ==========================================
+  function buildRekapTbody(w, semuaSetoran, thn, hariIni) {
+      const gerejaWilayah = masterDataGereja.filter(g => String(g.wilayah) === w);
+      let html = `<tr><td></td><td colspan="29" style="text-align: left; font-weight: bold; font-size: 9px; padding-left: 5px; background-color: #f8fafc; border-top: 2px solid #cbd5e1;">WIL - ${w} (GEREJA: ${gerejaWilayah.length})</td></tr>`;
       
       gerejaWilayah.forEach((g, index) => {
-        tbodyHtml += `<tr><td style="text-align: center;">${index + 1}</td><td>${g.nama}</td>`; 
+        html += `<tr><td style="text-align: center;">${index + 1}</td><td>${g.nama}</td>`; 
         let sumPaskah=0, sumPentakosta=0, sumHut=0, sumNatal=0; 
         semuaSetoran.forEach(x => { 
            if(x.id==g.id){
@@ -1549,50 +1539,86 @@ function inisialisasiData() {
              if (baktiMurni > 0 && baktiMurni < minBaktiMurni) styleBakti = "color: #ef4444; font-weight: bold;";
           }
 
-          tbodyHtml += `<td style="${styleBakti}">${txtBakti}</td><td style="${stylePers}">${txtPers}</td>`;
-          if (bIdx===3) tbodyHtml += `<td style="font-weight: bold;">${formatUang(sumPaskah)}</td>`; else if (bIdx===5) tbodyHtml += `<td style="font-weight: bold;">${formatUang(sumPentakosta)}</td>`; else if (bIdx===7) tbodyHtml += `<td style="font-weight: bold;">${formatUang(sumHut)}</td>`;
+          html += `<td style="${styleBakti}">${txtBakti}</td><td style="${stylePers}">${txtPers}</td>`;
+          if (bIdx===3) html += `<td style="font-weight: bold;">${formatUang(sumPaskah)}</td>`; else if (bIdx===5) html += `<td style="font-weight: bold;">${formatUang(sumPentakosta)}</td>`; else if (bIdx===7) html += `<td style="font-weight: bold;">${formatUang(sumHut)}</td>`;
         });
-        tbodyHtml += `<td style="font-weight: bold;">${formatUang(sumNatal)}</td></tr>`; 
+        html += `<td style="font-weight: bold;">${formatUang(sumNatal)}</td></tr>`; 
       });
-      document.querySelector("#tabelRekapPdf tbody").innerHTML = tbodyHtml; Swal.close();
+      return html;
+  }
+
+  // ==========================================
+  // RENDER LAYAR REKAPITULASI (SUPPORT 'SEMUA')
+  // ==========================================
+  function generateTabelRekap() {
+    const wil = document.getElementById("rekapWilayah").value, thn = document.getElementById("rekapTahun").value;
+    document.getElementById("labelTahun").innerText = thn; 
+    document.getElementById("labelTanggal").innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+    
+    if(!wil) return document.querySelector("#tabelRekapPdf tbody").innerHTML = '<tr><td colspan="30" class="text-center p-6 text-slate-400">Pilih Wilayah terlebih dahulu.</td></tr>'; 
+    Swal.fire({ title: 'Menyusun Data', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run.withSuccessHandler(semuaSetoran => {
+      let theadHtml = `<tr><th rowspan="2">NO</th><th rowspan="2" style="width: 180px;">RESORT / JEMAAT KHUSUS</th><th colspan="2">JANUARI</th><th colspan="2">FEBRUARI</th><th colspan="2">MARET</th><th colspan="2">APRIL</th><th rowspan="2">AMPLOP<br>PASKAH</th><th colspan="2">MEI</th><th colspan="2">JUNI</th><th rowspan="2">AMPLOP<br>PENTAKOSTA</th><th colspan="2">JULI</th><th colspan="2">AGUSTUS</th><th rowspan="2">AMPLOP<br>HUT</th><th colspan="2">SEPTEMBER</th><th colspan="2">OKTOBER</th><th colspan="2">NOVEMBER</th><th colspan="2">DESEMBER</th><th rowspan="2">AMPLOP<br>NATAL</th></tr><tr>`;
+      for(let i=0; i<12; i++) { theadHtml += `<th>BAKTI<br>BULANAN</th><th>PERS - II</th>`; }
+      theadHtml += `</tr>`; 
+      document.querySelector("#tabelRekapPdf thead").innerHTML = theadHtml;
+      
+      const hariIni = new Date(); 
+      let tbodyHtml = "";
+      
+      // Jika mode 'semua', loop semua wilayah. Jika tidak, proses 1 wilayah saja.
+      let listWilayah = wil === "semua" ? [...new Set(masterDataGereja.map(i => i.wilayah))].sort() : [wil];
+      listWilayah.forEach(w => { tbodyHtml += buildRekapTbody(w, semuaSetoran, thn, hariIni); });
+      
+      document.querySelector("#tabelRekapPdf tbody").innerHTML = tbodyHtml; 
+      Swal.close();
     }).getRekapTahunan(thn);
   }
 
+  // ==========================================
+  // CETAK REKAPITULASI (SUPPORT SINGLE & MASSAL)
+  // ==========================================
   function eksporPDF() {
     const wil = document.getElementById("rekapWilayah").value;
     const thn = document.getElementById("rekapTahun").value;
-    
     if(!wil) return Swal.fire('Pilih Wilayah', 'Pilih wilayah sebelum cetak PDF.', 'warning');
     
-    Swal.fire({ 
-       title: 'Menerbitkan PDF Vector...', 
-       text: 'Sistem merakit dokumen resmi agar tajam tanpa blur. Mohon tunggu...', 
-       allowOutsideClick: false, 
-       didOpen: () => Swal.showLoading() 
-    });
+    Swal.fire({ title: 'Menerbitkan PDF Vector...', text: 'Sistem merakit dokumen resmi agar tajam tanpa blur. Mohon tunggu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
-    const theadHtml = document.querySelector("#tabelRekapPdf thead").innerHTML;
-    const tbodyHtml = document.querySelector("#tabelRekapPdf tbody").innerHTML;
-    
-    google.script.run
-      .withSuccessHandler(res => { 
-         if(res.status) { 
-             const l = document.createElement("a"); 
-             l.href = `data:application/pdf;base64,${res.data}`; 
-             l.download = res.filename; 
-             l.click(); 
-             Swal.close(); 
-         } else {
-             Swal.fire('Gagal', res.message, 'error'); 
-         }
-      })
-      .withFailureHandler(err => {
-          Swal.close();
-          Swal.fire('Error Koneksi', err.message, 'error');
-      })
-      .cetakPDFRekapServer(wil, thn, theadHtml, tbodyHtml);
-  }
+    if (wil === "semua") {
+       // CETAK MASSAL: Kumpulkan semua data dan pisah per halaman
+       google.script.run.withSuccessHandler(semuaSetoran => {
+          let theadHtml = `<tr><th rowspan="2">NO</th><th rowspan="2" style="width: 180px;">RESORT / JEMAAT KHUSUS</th><th colspan="2">JANUARI</th><th colspan="2">FEBRUARI</th><th colspan="2">MARET</th><th colspan="2">APRIL</th><th rowspan="2">AMPLOP<br>PASKAH</th><th colspan="2">MEI</th><th colspan="2">JUNI</th><th rowspan="2">AMPLOP<br>PENTAKOSTA</th><th colspan="2">JULI</th><th colspan="2">AGUSTUS</th><th rowspan="2">AMPLOP<br>HUT</th><th colspan="2">SEPTEMBER</th><th colspan="2">OKTOBER</th><th colspan="2">NOVEMBER</th><th colspan="2">DESEMBER</th><th rowspan="2">AMPLOP<br>NATAL</th></tr><tr>`;
+          for(let i=0; i<12; i++) { theadHtml += `<th>BAKTI<br>BULANAN</th><th>PERS - II</th>`; }
+          theadHtml += `</tr>`; 
 
+          let listWilayah = [...new Set(masterDataGereja.map(i => i.wilayah))].sort();
+          let tablesData = [];
+          const hariIni = new Date();
+
+          listWilayah.forEach(w => {
+              let tbodyHtml = buildRekapTbody(w, semuaSetoran, thn, hariIni);
+              tablesData.push({ wilayah: w, tbody: tbodyHtml });
+          });
+
+          google.script.run.withSuccessHandler(res => { 
+             if(res.status) { const l = document.createElement("a"); l.href = `data:application/pdf;base64,${res.data}`; l.download = res.filename; l.click(); Swal.close(); } 
+             else Swal.fire('Gagal', res.message, 'error'); 
+          }).withFailureHandler(err => { Swal.close(); Swal.fire('Error Koneksi', err.message, 'error'); }).cetakPDFRekapSemuaServer(thn, theadHtml, tablesData);
+
+       }).getRekapTahunan(thn);
+
+    } else {
+       // CETAK SATU WILAYAH SAJA (Lama)
+       const theadHtml = document.querySelector("#tabelRekapPdf thead").innerHTML;
+       const tbodyHtml = document.querySelector("#tabelRekapPdf tbody").innerHTML;
+       google.script.run.withSuccessHandler(res => { 
+           if(res.status) { const l = document.createElement("a"); l.href = `data:application/pdf;base64,${res.data}`; l.download = res.filename; l.click(); Swal.close(); } 
+           else Swal.fire('Gagal', res.message, 'error'); 
+       }).withFailureHandler(err => { Swal.close(); Swal.fire('Error Koneksi', err.message, 'error'); }).cetakPDFRekapServer(wil, thn, theadHtml, tbodyHtml);
+    }
+  }
   function muatDataPenggajian() {
     const bln = document.getElementById("filterBulanGaji").value, thn = document.getElementById("filterTahunGaji").value, tbody = document.getElementById("tabelPenggajian");
     tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Menganalisa Status Jemaat...</td></tr>';

@@ -1959,13 +1959,28 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     sessionStorage.clear();
   });
 
-  // ==========================================
-  // FITUR BARU: GRAFIK CHART.JS
+ // ==========================================
+  // FITUR BARU: GRAFIK CHART.JS (PINTAR)
   // ==========================================
   let grafikSetoranWilayah = null;
 
   function renderGrafikWilayah(filteredPemasukan) {
-      // 1. Kumpulkan total setoran berdasarkan Wilayah
+      // 1. UPDATE TEKS JUDUL DINAMIS
+      let tipeFilter = document.getElementById("tipePemasukan").value;
+      let labelTeks = "SEMUA WAKTU"; // Default
+      
+      if (tipeFilter === "bulanan") {
+          let bln = document.getElementById("filterBlnPemasukan").value;
+          let thn = document.getElementById("filterTahun").value;
+          labelTeks = `${bln} ${thn}`;
+      } else if (tipeFilter === "harian") {
+          labelTeks = document.getElementById("filterTglPemasukan").value;
+      }
+      
+      let labelEl = document.getElementById("labelGrafikBulan");
+      if(labelEl) labelEl.innerText = labelTeks.toUpperCase();
+
+      // 2. Kumpulkan total setoran berdasarkan Wilayah
       let rekapWilayah = {};
       filteredPemasukan.forEach(r => {
           let w = r.wilayah || "Lainnya";
@@ -1973,15 +1988,14 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           rekapWilayah[w] += Number(r.jumlah) || 0;
       });
 
-      // 2. Urutkan label wilayah (misal: 1, 2, 3... dst)
+      // 3. Urutkan label wilayah (misal: 1, 2, 3... dst)
       let labelWilayah = Object.keys(rekapWilayah).sort((a,b) => String(a).localeCompare(String(b), undefined, {numeric: true}));
       let dataNominal = labelWilayah.map(l => rekapWilayah[l]);
 
-      // 3. Gambar grafiknya
+      // 4. Gambar grafiknya
       const ctx = document.getElementById('chartWilayah');
-      if (!ctx) return; // Mencegah error jika canvas belum diload
+      if (!ctx) return; 
 
-      // Hancurkan grafik lama sebelum menggambar yang baru (Mencegah tumpang tindih)
       if (grafikSetoranWilayah != null) {
           grafikSetoranWilayah.destroy();
       }
@@ -1993,7 +2007,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
               datasets: [{
                   label: 'Total Setoran (Rp)',
                   data: dataNominal,
-                  backgroundColor: '#8b5cf6', // Warna Ungu Brand Anda
+                  backgroundColor: '#8b5cf6', 
                   hoverBackgroundColor: '#6d28d9',
                   borderRadius: 6,
                   barThickness: 'flex',
@@ -2019,7 +2033,6 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
                       grid: { color: '#f1f5f9' },
                       ticks: {
                           callback: function(value) {
-                              // Mempersingkat angka panjang menjadi Juta (Jt)
                               if(value >= 1000000) return (value/1000000) + ' Jt';
                               return value;
                           },

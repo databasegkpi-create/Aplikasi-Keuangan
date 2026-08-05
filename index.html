@@ -157,7 +157,7 @@
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
            <div class="flex justify-between items-center mb-4">
               <h3 class="font-bold text-slate-800 text-base"><i class="fas fa-chart-bar text-brand-500 mr-2"></i>Grafik Total Setoran per Wilayah</h3>
-            <span id="labelGrafikBulan" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-100 px-2 py-1 rounded">MEMUAT...</span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">Bulan Terpilih</span>
            </div>
            <div class="relative h-64 w-full">
               <canvas id="chartWilayah"></canvas>
@@ -1964,28 +1964,8 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
   // ==========================================
   let grafikSetoranWilayah = null;
 
-  // ==========================================
-  // FITUR BARU: GRAFIK CHART.JS (PINTAR)
-  // ==========================================
-  let grafikSetoranWilayah = null;
-
   function renderGrafikWilayah(filteredPemasukan) {
-      // 1. UPDATE TEKS JUDUL DINAMIS
-      let tipeFilter = document.getElementById("tipePemasukan").value;
-      let labelTeks = "SEMUA WAKTU"; // Default
-      
-      if (tipeFilter === "bulanan") {
-          let bln = document.getElementById("filterBlnPemasukan").value;
-          let thn = document.getElementById("filterTahun").value;
-          labelTeks = `${bln} ${thn}`;
-      } else if (tipeFilter === "harian") {
-          labelTeks = document.getElementById("filterTglPemasukan").value;
-      }
-      
-      let labelEl = document.getElementById("labelGrafikBulan");
-      if(labelEl) labelEl.innerText = labelTeks.toUpperCase();
-
-      // 2. Kumpulkan total setoran berdasarkan Wilayah
+      // 1. Kumpulkan total setoran berdasarkan Wilayah
       let rekapWilayah = {};
       filteredPemasukan.forEach(r => {
           let w = r.wilayah || "Lainnya";
@@ -1993,14 +1973,15 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           rekapWilayah[w] += Number(r.jumlah) || 0;
       });
 
-      // 3. Urutkan label wilayah (misal: 1, 2, 3... dst)
+      // 2. Urutkan label wilayah (misal: 1, 2, 3... dst)
       let labelWilayah = Object.keys(rekapWilayah).sort((a,b) => String(a).localeCompare(String(b), undefined, {numeric: true}));
       let dataNominal = labelWilayah.map(l => rekapWilayah[l]);
 
-      // 4. Gambar grafiknya
+      // 3. Gambar grafiknya
       const ctx = document.getElementById('chartWilayah');
-      if (!ctx) return; 
+      if (!ctx) return; // Mencegah error jika canvas belum diload
 
+      // Hancurkan grafik lama sebelum menggambar yang baru (Mencegah tumpang tindih)
       if (grafikSetoranWilayah != null) {
           grafikSetoranWilayah.destroy();
       }
@@ -2012,7 +1993,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
               datasets: [{
                   label: 'Total Setoran (Rp)',
                   data: dataNominal,
-                  backgroundColor: '#8b5cf6', 
+                  backgroundColor: '#8b5cf6', // Warna Ungu Brand Anda
                   hoverBackgroundColor: '#6d28d9',
                   borderRadius: 6,
                   barThickness: 'flex',
@@ -2038,6 +2019,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
                       grid: { color: '#f1f5f9' },
                       ticks: {
                           callback: function(value) {
+                              // Mempersingkat angka panjang menjadi Juta (Jt)
                               if(value >= 1000000) return (value/1000000) + ' Jt';
                               return value;
                           },
@@ -2052,7 +2034,6 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           }
       });
   }
-
 </script>
 </body>
 </html>

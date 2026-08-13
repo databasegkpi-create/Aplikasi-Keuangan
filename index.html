@@ -272,6 +272,7 @@
              <div class="flex items-center gap-2 w-full md:w-auto"><span class="text-xs font-bold text-slate-500">S/d:</span><input type="date" id="filterTglSelesaiPemLain" onchange="currentPagePemLain=1; renderTabelHistoryPemLain()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-700"></div>
           </div>
           <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
+            <button onclick="cetakPDFHistoryPemLain()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors shrink-0 flex items-center justify-center ml-2"><i class="fas fa-print mr-1.5"></i> Cetak PDF</button>
             <div class="relative w-full md:w-72"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryPemLain" oninput="currentPagePemLain=1; renderTabelHistoryPemLain()" placeholder="Cari sumber/keterangan..." class="w-full py-2.5 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-emerald-500 transition-all"></div>
           </div>
         </div>
@@ -458,6 +459,11 @@
       <input type="hidden" name="timestamp_lama" id="timestamp_lama" value="">
       <input type="hidden" name="tahun_lama" id="tahun_lama" value="">
       <input type="hidden" id="submit_action" name="submit_action" value="simpan_kirim">
+      <!-- Atribut khusus untuk fitur "Pindahkan Dana" -->
+      <input type="hidden" id="ext_transfer_mode" name="ext_transfer_mode" value="false">
+      <input type="hidden" id="ext_tgl" name="ext_tgl">
+      <input type="hidden" id="ext_ket" name="ext_ket">
+      <input type="hidden" id="ext_jml" name="ext_jml">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Pilih Wilayah</label><select id="formSetoranWilayah" onchange="filterGerejaSetoran()" class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-xs outline-none focus:border-brand-500 transition-all"><option value="">-- Semua --</option></select></div>
       <div>
@@ -1689,7 +1695,20 @@ function applyDataToSetoranForm(data) {
          }).buatDanKirimKwitansi(formObj);
       }
     };
-    formObj.is_edit === "true" ? google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).updateSetoran(formObj) : google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).simpanData(formObj);
+
+    // ==========================================
+    // FITUR BARU: INTERSEP MODE TRANSFER (DARI EKSTERNAL KE JEMAAT)
+    // ==========================================
+    const extModeEl = document.getElementById("ext_transfer_mode");
+    const isTransferMode = extModeEl ? extModeEl.value === "true" : false;
+
+    if (isTransferMode) {
+       // Jika ini adalah uang dari Non-Jemaat yang dikonversi
+       google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).transferEksternalKeJemaat(formObj);
+    } else {
+       // Jika ini adalah input / edit Jemaat biasa
+       formObj.is_edit === "true" ? google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).updateSetoran(formObj) : google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).simpanData(formObj);
+    }
   }
 function closeModalSetoran() { 
       document.getElementById("modalSetoran").classList.add("hidden"); 
@@ -1697,6 +1716,7 @@ function closeModalSetoran() {
       document.getElementById("is_edit").value = "false"; 
       document.getElementById("timestamp_lama").value = ""; 
       document.getElementById("tahun_lama").value = ""; 
+      document.getElementById("ext_transfer_mode").value = "false"; document.getElementById("ext_tgl").value = ""; document.getElementById("ext_ket").value = ""; document.getElementById("ext_jml").value = ""; document.getElementById("modalSetoranTitle").innerText = "Formulir Setoran";
       if(document.getElementById("liveTotalSetoran")) document.getElementById("liveTotalSetoran").innerText = "Rp 0";
       showInfoGereja(); 
   }
@@ -2558,6 +2578,7 @@ function closeModalSetoran() {
       });
 
       filtered.sort((a, b) => new Date(normalizeDate(b.tanggal)) - new Date(normalizeDate(a.tanggal))); 
+    window.currentFilteredPemLain = filtered;
       let totalNominal = 0; filtered.forEach(r => totalNominal += Number(r.jumlah) || 0);
       const totalPages = Math.ceil(filtered.length / itemsPerPagePemLain) || 1;
       if (currentPagePemLain > totalPages) currentPagePemLain = totalPages; if (currentPagePemLain < 1) currentPagePemLain = 1;
@@ -2574,9 +2595,10 @@ function closeModalSetoran() {
              <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-emerald-500 mr-1.5"></i>${fTgl}</td>
              <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.keterangan}</td>
              <td class="text-right font-black text-emerald-600 py-3 px-4 border-b">+ Rp ${amanJml.toLocaleString('id-ID')}</td>
-             <td class="text-center py-3 px-4 border-b admin-only">
-               <button onclick="editPemLain('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-emerald-600 p-1" title="Edit Pemasukan"><i class="fas fa-edit"></i></button>
-               <button onclick="hapusPemLain('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus Pemasukan"><i class="fas fa-trash-alt"></i></button>
+            <td class="text-center py-3 px-4 border-b admin-only">
+               <button onclick="bukaTransferEksternal('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-indigo-600 p-1 mr-1.5" title="Pindahkan ke Jemaat"><i class="fas fa-exchange-alt"></i></button>
+               <button onclick="editPemLain('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-emerald-600 p-1" title="Edit"><i class="fas fa-edit"></i></button>
+               <button onclick="hapusPemLain('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus"><i class="fas fa-trash-alt"></i></button>
              </td>
            </tr>`;
       });
@@ -2591,6 +2613,50 @@ function closeModalSetoran() {
   }
 
   function changePagePemLain(newPage) { currentPagePemLain = newPage; renderTabelHistoryPemLain(); }
+
+  function bukaTransferEksternal(tgl, ket, jml) {
+      document.getElementById("formSetoran").reset();
+      document.getElementById("is_edit").value = "false";
+      
+      // Nyalakan mode transfer
+      document.getElementById("ext_transfer_mode").value = "true";
+      document.getElementById("ext_tgl").value = tgl;
+      document.getElementById("ext_ket").value = ket;
+      document.getElementById("ext_jml").value = jml;
+
+      document.getElementById("modalSetoranTitle").innerHTML = `<span class="text-indigo-600"><i class="fas fa-exchange-alt mr-1"></i> Konversi Pemasukan (NN)</span>`;
+      
+      // Auto-fill angka dan tanggal ke kolom Bakti Bulanan (Bisa dipindah manual oleh user jika mau)
+      document.getElementsByName("bakti_bulanan")[0].value = Number(jml).toLocaleString('id-ID');
+      document.getElementsByName("tgl_bakti")[0].value = tgl;
+      
+      hitungTotalSetoranLive();
+      document.getElementById("modalSetoran").classList.remove("hidden");
+  }
+
+  function cetakPDFHistoryPemLain() {
+    if (!window.currentFilteredPemLain || window.currentFilteredPemLain.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data untuk dicetak.', 'warning');
+    let rowsHtml = "", totalSemuaNominal = 0;
+    
+    window.currentFilteredPemLain.forEach(r => { 
+       let num = Number(r.jumlah) || 0; totalSemuaNominal += num; 
+       let d = new Date(r.tanggal); 
+       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : r.tanggal; 
+       rowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fTgl}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${r.keterangan}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color:#94a3b8;">-</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold; color: #10b981;">Eksternal</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #10b981; font-weight: bold;">Rp ${num.toLocaleString('id-ID')}</td></tr>`; 
+    });
+    
+    Swal.fire({ title: 'Menerbitkan PDF Resmi...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => { 
+        if(res.status) { const l = document.createElement("a"); l.href = `data:application/pdf;base64,${res.data}`; l.download = res.filename; l.click(); Swal.close(); } 
+        else Swal.fire('Gagal', res.message, 'error'); 
+    }).withFailureHandler(err => Swal.fire('Error', err.message, 'error'))
+    .cetakPDFHistoryServer({ 
+        tglMulai: document.getElementById("filterTglMulaiPemLain").value, 
+        tglSelesai: document.getElementById("filterTglSelesaiPemLain").value, 
+        totalSemua: totalSemuaNominal, 
+        tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
+    }, rowsHtml, 'Laporan_History_Eksternal.pdf');
+  }
 </script>
 </body>
 </html>

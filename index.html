@@ -795,7 +795,7 @@ function inisialisasiData() {
     
     google.script.run.withSuccessHandler(res => {
       masterDataGereja = res.gereja;
-      let wil = [...new Set(masterDataGereja.map(i => i.wilayah))].sort();
+     let wil = [...new Set(masterDataGereja.map(i => i.wilayah))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric: true}));
       let optWil = '<option value="">-- Semua Wilayah --</option>' + wil.map(w => `<option value="${w}">${w}</option>`).join("");
       let optGrj = '<option value="">-- Semua Gereja --</option>' + masterDataGereja.map(g => `<option value="${g.id}">${g.nama} (${g.wilayah})</option>`).join("");
       
@@ -1696,7 +1696,7 @@ function closeModalSetoran() {
       let tbodyHtml = "";
       
       // Jika mode 'semua', loop semua wilayah. Jika tidak, proses 1 wilayah saja.
-      let listWilayah = wil === "semua" ? [...new Set(masterDataGereja.map(i => i.wilayah))].sort() : [wil];
+      let listWilayah = wil === "semua" ? [...new Set(masterDataGereja.map(i => i.wilayah))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric: true})) : [wil];
       listWilayah.forEach(w => { tbodyHtml += buildRekapTbody(w, semuaSetoran, thn, hariIni); });
       
       document.querySelector("#tabelRekapPdf tbody").innerHTML = tbodyHtml; 
@@ -1721,7 +1721,7 @@ function closeModalSetoran() {
           for(let i=0; i<12; i++) { theadHtml += `<th>BAKTI<br>BULANAN</th><th>PERS - II</th>`; }
           theadHtml += `</tr>`; 
 
-          let listWilayah = [...new Set(masterDataGereja.map(i => i.wilayah))].sort();
+        let listWilayah = [...new Set(masterDataGereja.map(i => i.wilayah))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric: true}));
           let tablesData = [];
           const hariIni = new Date();
 

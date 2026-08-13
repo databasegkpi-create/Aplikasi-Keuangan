@@ -418,7 +418,20 @@
       <input type="hidden" id="submit_action" name="submit_action" value="simpan_kirim">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Pilih Wilayah</label><select id="formSetoranWilayah" onchange="filterGerejaSetoran()" class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-xs outline-none focus:border-brand-500 transition-all"><option value="">-- Semua --</option></select></div>
-        <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Pilih Gereja</label><select name="id_gereja" id="id_gereja" onchange="showInfoGereja()" required class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-xs outline-none truncate focus:border-brand-500 transition-all"><option value="">-- Gereja --</option></select></div>
+      <div>
+  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Pilih Gereja</label>
+  <div class="relative w-full mt-1">
+    <!-- Input ini yang dikirim ke server (Tersembunyi) -->
+    <input type="hidden" name="id_gereja" id="id_gereja" required>
+    <!-- Input ini yang diketik oleh user (Kelihatan) -->
+    <input type="text" id="inputSearchGereja" placeholder="Ketik atau pilih gereja..." autocomplete="off" required onfocus="bukaDropdownGereja()" oninput="filterListGereja()" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-xs outline-none focus:border-brand-500 transition-all cursor-text relative z-10">
+    <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none z-20"></i>
+    <!-- Wadah list Gereja yang melayang -->
+    <div id="dropdownGerejaList" class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-52 overflow-y-auto hidden">
+       <!-- List akan diisi otomatis oleh JS -->
+    </div>
+  </div>
+</div> 
       </div>
       <div id="infoGerejaBox" class="hidden bg-slate-50 border border-slate-100 rounded-xl p-4 grid grid-cols-2 gap-3 text-xs">
         <div><span class="block text-[9px] text-slate-400 font-bold uppercase tracking-wide">Pendeta</span><strong id="infoPdt" class="text-slate-700">-</strong></div>
@@ -1443,7 +1456,23 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     google.script.run.withSuccessHandler(res => { if(res.status) { animatedAlert('success', 'Berhasil!', res.message); closeModalEditGereja(); closeModalDetail(); inisialisasiData(); if (!document.getElementById('pagePenggajian').classList.contains('hidden')) muatDataPenggajian(); } else Swal.fire('Gagal', res.message, 'error'); btn.innerHTML = ori; btn.disabled = false; }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); btn.innerHTML = ori; btn.disabled = false; }).updateDataGereja(Object.fromEntries(new FormData(e.target).entries()));
   }
 
-  function filterGerejaSetoran() { const wil = document.getElementById("formSetoranWilayah").value; document.getElementById("id_gereja").innerHTML = '<option value="">-- Pilih Gereja --</option>' + masterDataGereja.filter(g => !wil || String(g.wilayah) === wil).map(i => `<option value="${i.id}">${i.nama}</option>`).join(""); showInfoGereja(); }
+  function filterGerejaSetoran() { 
+    const wil = document.getElementById("formSetoranWilayah").value; 
+    const listContainer = document.getElementById("dropdownGerejaList");
+    let html = '';
+    
+    masterDataGereja.filter(g => !wil || String(g.wilayah) === wil).forEach(i => {
+       let amanNama = i.nama.replace(/'/g, "\\'");
+       html += `<div class="p-3 text-xs font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-600 cursor-pointer border-b border-slate-50" onclick="pilihGerejaForm('${i.id}', '${amanNama}')">${i.nama}</div>`;
+    });
+    
+    if (listContainer) listContainer.innerHTML = html === '' ? '<div class="p-3 text-xs text-slate-400 text-center italic">Gereja tidak ditemukan</div>' : html;
+    
+    // Reset pilihan jika user sengaja mengganti filter wilayah
+    if(document.getElementById("id_gereja")) document.getElementById("id_gereja").value = ""; 
+    if(document.getElementById("inputSearchGereja")) document.getElementById("inputSearchGereja").value = ""; 
+    showInfoGereja(); 
+  }
   function showInfoGereja() { 
     const id = document.getElementById("id_gereja").value; 
     
@@ -1474,10 +1503,16 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
 function applyDataToSetoranForm(data) {
     document.getElementById("is_edit").value = "true"; document.getElementById("timestamp_lama").value = data.timestamp_lama; document.getElementById("tahun_lama").value = data.tahun;
     const gerejaAsli = masterDataGereja.find(g => g.id.toString() === (data.id_gereja || data.id).toString()), wil = gerejaAsli ? gerejaAsli.wilayah : "";
-    document.getElementById("formSetoranWilayah").value = wil; document.getElementById("id_gereja").innerHTML = '<option value="">-- Pilih Gereja --</option>' + masterDataGereja.filter(g => !wil || String(g.wilayah) === String(wil)).map(i => `<option value="${i.id}">${i.nama}</option>`).join(""); document.getElementById("id_gereja").value = data.id_gereja || data.id; showInfoGereja();
+    
+    // PERBAIKAN PENGISIAN SMART DROPDOWN SAAT EDIT
+    document.getElementById("formSetoranWilayah").value = wil; 
+    filterGerejaSetoran(); 
+    document.getElementById("id_gereja").value = data.id_gereja || data.id; 
+    document.getElementById("inputSearchGereja").value = gerejaAsli ? gerejaAsli.nama : "";
+    showInfoGereja();
+    
     document.getElementsByName("bulan")[0].value = data.bulan; document.getElementById("formSetoranTahun").value = data.tahun;
     
-    // PEMASANGAN TITIK OTOMATIS SAAT EDIT
     const setNominal = (name, val) => { 
         let num = Number(String(val).replace(/[^0-9]/g, '')) || 0; 
         document.getElementsByName(name)[0].value = num > 0 ? num.toLocaleString('id-ID') : ""; 
@@ -1491,7 +1526,7 @@ function applyDataToSetoranForm(data) {
     setNominal("amplop_natal", data.amplop_natal || data.natal); document.getElementsByName("tgl_natal")[0].value = data.tglNatal || data.tgl_natal || "";
     setNominal("setoran_lainnya", data.setoran_lainnya || data.lainnya); document.getElementsByName("tgl_lainnya")[0].value = data.tglLainnya || data.tgl_lainnya || ""; document.getElementsByName("ket_lainnya")[0].value = data.ketLainnya || data.ket_lainnya || "";
     
-    hitungTotalSetoranLive(); // Memanggil Kalkulasi Live Total
+    if(typeof hitungTotalSetoranLive === "function") hitungTotalSetoranLive();
 
     document.getElementById("modalSetoranTitle").innerText = "Edit Setoran"; document.getElementById("btnSimpanSaja").innerHTML = "Update Saja"; document.getElementById("btnSimpanKirim").innerHTML = '<i class="fab fa-whatsapp mr-1.5"></i> Update & Kirim WA'; document.getElementById("modalSetoran").classList.remove("hidden");
   }
@@ -1501,8 +1536,34 @@ function applyDataToSetoranForm(data) {
   function editPemasukanDariHistory(id_gereja, bulan, tahun) { const data = globalDataSemuaMutasi.find(item => String(item.id) === String(id_gereja) && item.bulan === bulan && String(item.tahun) === String(tahun)); if(!data) return Swal.fire('Error', 'Data asli tidak ditemukan.', 'error'); applyDataToSetoranForm(data); }
 
   function submitSetoran(e) {
-    e.preventDefault(); const formObj = Object.fromEntries(new FormData(e.target).entries()), actionType = document.getElementById("submit_action").value, btnSimpan = document.getElementById("btnSimpanSaja"), btnKirim = document.getElementById("btnSimpanKirim"), oriSimpan = btnSimpan.innerHTML, oriKirim = btnKirim.innerHTML;
+    e.preventDefault(); 
+    const formObj = Object.fromEntries(new FormData(e.target).entries());
+
+    // ==========================================
+    // FITUR KEAMANAN 1: BLOKIR JIKA TOTAL = 0
+    // ==========================================
+    let names = ["bakti_bulanan", "pers_2", "amplop_paskah", "amplop_pentakosta", "amplop_hut", "amplop_natal", "setoran_lainnya"];
+    let totalNominal = 0;
+    names.forEach(n => {
+        let val = formObj[n] ? String(formObj[n]).replace(/[^0-9]/g, '') : "0";
+        totalNominal += Number(val) || 0;
+    });
+    if(totalNominal <= 0) {
+        Swal.fire('Data Kosong!', 'Total setoran tidak boleh Rp 0. Masukkan nominal uang yang valid.', 'warning');
+        return; 
+    }
+
+    // ==========================================
+    // FITUR KEAMANAN 2: CEGAT NAMA GEREJA ILEGAL
+    // ==========================================
+    if(!formObj.id_gereja || formObj.id_gereja === "") {
+        Swal.fire('Gereja Tidak Valid!', 'Silakan ketik, lalu KLIK nama gereja dari daftar dropdown yang muncul.', 'error');
+        return; 
+    }
+
+    const actionType = document.getElementById("submit_action").value, btnSimpan = document.getElementById("btnSimpanSaja"), btnKirim = document.getElementById("btnSimpanKirim"), oriSimpan = btnSimpan.innerHTML, oriKirim = btnKirim.innerHTML;
     btnSimpan.disabled = true; btnKirim.disabled = true; actionType === 'simpan_saja' ? btnSimpan.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...' : btnKirim.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
+    
     const sHandler = (res) => {
       if (res && res.status === false) { Swal.fire('Gagal', res.message, 'error'); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; return; }
       if(actionType === 'simpan_saja') { 
@@ -2170,6 +2231,46 @@ function closeModalSetoran() {
       });
       document.getElementById("liveTotalSetoran").innerText = "Rp " + total.toLocaleString('id-ID');
   }
+  // ==========================================
+  // FITUR: DROPDOWN GEREJA PINTAR (SEARCHABLE)
+  // ==========================================
+  function bukaDropdownGereja() {
+    document.getElementById("dropdownGerejaList").classList.remove("hidden");
+    if(document.getElementById("inputSearchGereja").value === "") filterGerejaSetoran();
+  }
+
+  function filterListGereja() {
+    const keyword = document.getElementById("inputSearchGereja").value.toLowerCase();
+    document.getElementById("dropdownGerejaList").classList.remove("hidden");
+    const items = document.getElementById("dropdownGerejaList").children;
+    
+    for (let i = 0; i < items.length; i++) {
+      if(items[i].innerText.toLowerCase().includes(keyword)) {
+          items[i].classList.remove("hidden");
+      } else {
+          items[i].classList.add("hidden");
+      }
+    }
+    // Jika user asik mengetik, kosongkan ID di belakang layar agar dia WAJIB meng-klik dari daftar
+    document.getElementById("id_gereja").value = "";
+    showInfoGereja();
+  }
+
+  function pilihGerejaForm(id, nama) {
+    document.getElementById("id_gereja").value = id;
+    document.getElementById("inputSearchGereja").value = nama; // Tampilkan nama yang dipilih ke kotak input
+    document.getElementById("dropdownGerejaList").classList.add("hidden");
+    showInfoGereja(); // Panggil data Pendeta/Bendahara
+  }
+
+  // Menutup dropdown jika user meng-klik sembarang tempat di luar kotak
+  document.addEventListener('click', function(e) {
+    const box = document.getElementById("inputSearchGereja");
+    const list = document.getElementById("dropdownGerejaList");
+    if(box && list && !box.contains(e.target) && !list.contains(e.target)) {
+       list.classList.add("hidden");
+    }
+  });
 </script>
 </body>
 </html>

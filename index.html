@@ -202,6 +202,7 @@
                 <select id="filterBlnPemasukan" onchange="loadLaporanKeuangan()" class="p-1.5 px-2 text-xs font-semibold outline-none bg-transparent text-slate-600 cursor-pointer w-full md:w-auto"><option value="Januari">Jan</option><option value="Februari">Feb</option><option value="Maret">Mar</option><option value="April">Apr</option><option value="Mei">Mei</option><option value="Juni">Jun</option><option value="Juli" selected>Jul</option><option value="Agustus">Agu</option><option value="September">Sep</option><option value="Oktober">Okt</option><option value="November">Nov</option><option value="Desember">Des</option></select>
              </div>
              <button onclick="cetakArusKasPDF()" class="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-900 transition-colors shrink-0 h-[38px]"><i class="fas fa-print mr-1.5"></i> Cetak Arus Kas</button>
+          <button onclick="bukaModalBukuKas()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-indigo-700 transition-colors shrink-0 h-[38px]"><i class="fas fa-book mr-1.5"></i> Laporan Up-To-Date</button>
            </div>
         </div>
 
@@ -623,6 +624,22 @@
     </button>
   </div>
 </div>
+  <!-- MODAL BUKU KAS UPTODATE -->
+<div id="modalBukuKas" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden z-[95] flex justify-center items-center p-4">
+  <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative animate__animated animate__zoomIn">
+    <div class="px-6 py-4 flex justify-between items-center border-b border-slate-100 bg-indigo-50/50">
+       <h3 class="text-sm font-bold text-slate-800">Cetak Buku Kas</h3>
+       <button onclick="document.getElementById('modalBukuKas').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <p class="text-xs text-slate-500 font-medium mb-2">Pilih rentang tanggal untuk melihat rincian Pemasukan, Pengeluaran, dan Saldo Berjalan.</p>
+      <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Dari Tanggal</label><input type="date" id="bukuKasMulai" class="w-full p-3 mt-1.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold focus:border-indigo-500 outline-none transition-all"></div>
+      <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Sampai Tanggal</label><input type="date" id="bukuKasSelesai" class="w-full p-3 mt-1.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold focus:border-indigo-500 outline-none transition-all"></div>
+      
+      <button onclick="eksekusiCetakBukuKas()" class="w-full bg-indigo-600 text-white p-3.5 rounded-xl font-bold tracking-wide hover:bg-indigo-700 transition-all mt-6 text-sm shadow-md shadow-indigo-500/20"><i class="fas fa-print mr-1.5"></i> Generate PDF Buku Kas</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= SCRIPTS ================= -->
 <script>
@@ -663,7 +680,7 @@ const serverFunctions = [
   "hapusSetoran", "updateDataGereja", "simpanData", "updateSetoran",
   "buatDanKirimKwitansi", "simpanPengeluaran", "getPenggajianData",
   "generateGajiMassal", "simpanGajiPendeta", "buatDanKirimSlipGaji",
-  "broadcastGajiMassal", "importSetoranMassal","hapusPengeluaran", "updatePengeluaran"
+  "broadcastGajiMassal", "importSetoranMassal","hapusPengeluaran", "updatePengeluaran","generateBukuKasPDF"
 ];
 
 serverFunctions.forEach(funcName => {
@@ -2271,6 +2288,42 @@ function closeModalSetoran() {
        list.classList.add("hidden");
     }
   });
+  // ==========================================
+  // FITUR: BUKU KAS UMUM (RUNNING BALANCE)
+  // ==========================================
+  function bukaModalBukuKas() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      document.getElementById("bukuKasMulai").value = `${yyyy}-${mm}-01`;
+      document.getElementById("bukuKasSelesai").value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("modalBukuKas").classList.remove("hidden");
+  }
+
+  function eksekusiCetakBukuKas() {
+      const tglMulai = document.getElementById("bukuKasMulai").value;
+      const tglSelesai = document.getElementById("bukuKasSelesai").value;
+      const tahun = tglMulai ? tglMulai.substring(0, 4) : document.getElementById("filterTahun").value;
+      
+      if (!tglMulai || !tglSelesai) return Swal.fire("Perhatian", "Tanggal mulai dan selesai harus diisi!", "warning");
+      if (tglMulai > tglSelesai) return Swal.fire("Perhatian", "Tanggal mulai tidak boleh lewat dari tanggal selesai!", "warning");
+
+      Swal.fire({ title: 'Menyusun Laporan...', text: 'Menghitung Saldo Berjalan dari awal tahun. Mohon tunggu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      
+      google.script.run.withSuccessHandler(res => {
+          if(res.status) {
+              const link = document.createElement("a");
+              link.href = `data:application/pdf;base64,${res.data}`;
+              link.download = res.filename;
+              link.click();
+              Swal.close();
+              document.getElementById('modalBukuKas').classList.add('hidden');
+          } else {
+              Swal.fire("Gagal", res.message, "error");
+          }
+      }).withFailureHandler(err => Swal.fire("Error Server", err.message, "error")).generateBukuKasPDF(tglMulai, tglSelesai, tahun);
+  }
 </script>
 </body>
 </html>

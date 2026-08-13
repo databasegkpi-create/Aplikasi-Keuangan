@@ -1438,7 +1438,31 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
   }
 
   function filterGerejaSetoran() { const wil = document.getElementById("formSetoranWilayah").value; document.getElementById("id_gereja").innerHTML = '<option value="">-- Pilih Gereja --</option>' + masterDataGereja.filter(g => !wil || String(g.wilayah) === wil).map(i => `<option value="${i.id}">${i.nama}</option>`).join(""); showInfoGereja(); }
-  function showInfoGereja() { const id = document.getElementById("id_gereja").value; if(!id) { document.getElementById("infoGerejaBox").classList.add("hidden"); document.getElementById("infoMin").innerText = "Min: Rp -"; return; } const grj = masterDataGereja.find(g => g.id == id); if(grj) { document.getElementById("infoPdt").innerText = grj.pendeta || "-"; document.getElementById("infoBdh").innerText = grj.bendahara || "-"; document.getElementById("infoMin").innerText = `Min: Rp ${Number(String(grj.min_bakti).replace(/[^0-9]/g, '')).toLocaleString('id-ID')}`; document.getElementById("infoGerejaBox").classList.remove("hidden"); } }
+  function showInfoGereja() { 
+    const id = document.getElementById("id_gereja").value; 
+    
+    if(!id) { 
+      document.getElementById("infoGerejaBox").classList.add("hidden"); 
+      document.getElementById("infoMin").innerText = "Min: Rp -"; 
+      return; 
+    } 
+    
+    const grj = masterDataGereja.find(g => g.id == id); 
+    
+    if(grj) { 
+      // ==========================================
+      // FITUR BARU: AUTO-FILL WILAYAH
+      // ==========================================
+      document.getElementById("formSetoranWilayah").value = grj.wilayah;
+      
+      // Menampilkan informasi Pendeta & Bendahara
+      document.getElementById("infoPdt").innerText = grj.pendeta || "-"; 
+      document.getElementById("infoBdh").innerText = grj.bendahara || "-"; 
+      document.getElementById("infoMin").innerText = `Min: Rp ${Number(String(grj.min_bakti).replace(/[^0-9]/g, '')).toLocaleString('id-ID')}`; 
+      document.getElementById("infoGerejaBox").classList.remove("hidden"); 
+    } 
+  }
+  
   function openModalSetoran() { document.getElementById("modalSetoranTitle").innerText = "Formulir Setoran"; document.getElementById("btnSimpanSaja").innerHTML = "Simpan Saja"; document.getElementById("btnSimpanKirim").innerHTML = '<i class="fab fa-whatsapp mr-1.5"></i> Simpan & Kirim WA'; document.getElementById("modalSetoran").classList.remove("hidden"); }
   function closeModalSetoran() { document.getElementById("modalSetoran").classList.add("hidden"); document.getElementById("formSetoran").reset(); document.getElementById("is_edit").value = "false"; document.getElementById("timestamp_lama").value = ""; document.getElementById("tahun_lama").value = ""; showInfoGereja(); }
 

@@ -445,27 +445,33 @@
         
       </div> 
       
-      <div class="border border-slate-200 rounded-2xl p-5 space-y-4 bg-white shadow-sm">
+     <div class="border border-slate-200 rounded-2xl p-5 space-y-4 bg-white shadow-sm">
         <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Setoran Utama</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label class="text-[10px] font-bold text-slate-400">BAKTI BULANAN (Rp)</label><input type="number" name="bakti_bulanan" placeholder="0" class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-white font-bold text-sm outline-none focus:border-brand-500"><input type="date" name="tgl_bakti" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"><small class="text-[9px] text-rose-500 font-bold mt-1 block" id="infoMin">Min: Rp -</small></div>
-          <div><label class="text-[10px] font-bold text-slate-400">PERSEMBAHAN II (Rp)</label><input type="number" name="pers_2" placeholder="0" class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-white font-bold text-sm outline-none focus:border-brand-500"><input type="date" name="tgl_pers2" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
+          <div><label class="text-[10px] font-bold text-slate-400">BAKTI BULANAN (Rp)</label><input type="text" inputmode="numeric" name="bakti_bulanan" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-white font-bold text-sm outline-none focus:border-brand-500"><input type="date" name="tgl_bakti" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"><small class="text-[9px] text-rose-500 font-bold mt-1 block" id="infoMin">Min: Rp -</small></div>
+          <div><label class="text-[10px] font-bold text-slate-400">PERSEMBAHAN II (Rp)</label><input type="text" inputmode="numeric" name="pers_2" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-3 mt-1 rounded-xl border border-slate-200 bg-white font-bold text-sm outline-none focus:border-brand-500"><input type="date" name="tgl_pers2" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
         </div>
         <div class="w-full h-px bg-slate-100 my-4"></div>
         <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Setoran Amplop Tambahan</h4>
         <div class="grid grid-cols-2 gap-4">
-          <div><label class="text-[10px] font-bold text-slate-400">PASKAH (Rp)</label><input type="number" name="amplop_paskah" placeholder="0" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_paskah" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
-          <div><label class="text-[10px] font-bold text-slate-400">PENTAKOSTA (Rp)</label><input type="number" name="amplop_pentakosta" placeholder="0" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_pentakosta" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
-          <div><label class="text-[10px] font-bold text-slate-400">HUT (Rp)</label><input type="number" name="amplop_hut" placeholder="0" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_hut" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
-          <div><label class="text-[10px] font-bold text-slate-400">NATAL (Rp)</label><input type="number" name="amplop_natal" placeholder="0" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_natal" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
+          <div><label class="text-[10px] font-bold text-slate-400">PASKAH (Rp)</label><input type="text" inputmode="numeric" name="amplop_paskah" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_paskah" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
+          <div><label class="text-[10px] font-bold text-slate-400">PENTAKOSTA (Rp)</label><input type="text" inputmode="numeric" name="amplop_pentakosta" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_pentakosta" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
+          <div><label class="text-[10px] font-bold text-slate-400">HUT (Rp)</label><input type="text" inputmode="numeric" name="amplop_hut" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_hut" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
+          <div><label class="text-[10px] font-bold text-slate-400">NATAL (Rp)</label><input type="text" inputmode="numeric" name="amplop_natal" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs outline-none"><input type="date" name="tgl_natal" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-600"></div>
           <div class="col-span-2 border border-slate-200 p-3 rounded-xl bg-slate-100/50">
             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block"><i class="fas fa-ellipsis-h mr-1 text-slate-400"></i> Setoran Lain-Lain</label>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-               <div><label class="text-[9px] font-bold text-slate-400">NOMINAL (Rp)</label><input type="number" name="setoran_lainnya" placeholder="0" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-white font-bold text-xs outline-none focus:border-brand-500"></div>
+               <div><label class="text-[9px] font-bold text-slate-400">NOMINAL (Rp)</label><input type="text" inputmode="numeric" name="setoran_lainnya" placeholder="0" oninput="formatDanKalkulasi(this)" class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-white font-bold text-xs outline-none focus:border-brand-500"></div>
                <div><label class="text-[9px] font-bold text-slate-400">TANGGAL TRANSFER</label><input type="date" name="tgl_lainnya" class="w-full p-2 mt-1 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 outline-none focus:border-brand-500"></div>
                <div class="col-span-1 md:col-span-2"><label class="text-[9px] font-bold text-slate-400">KETERANGAN SETORAN</label><input type="text" name="ket_lainnya" placeholder="Cth: Sumbangan Pembangunan, Dana Diakonia..." class="w-full p-2.5 mt-1 rounded-lg border border-slate-200 bg-white text-xs outline-none focus:border-brand-500"></div>
             </div>
           </div>
+        </div>
+
+        <!-- FITUR BARU: KOTAK LIVE TOTAL SEBELUM SIMPAN -->
+        <div class="flex justify-between items-center bg-brand-50 p-4 rounded-xl border border-brand-200 mt-4">
+           <span class="font-bold text-brand-700 text-[11px] uppercase tracking-widest">Total Disetor</span>
+           <span id="liveTotalSetoran" class="font-black text-brand-600 text-xl">Rp 0</span>
         </div>
       </div>
       
@@ -1464,20 +1470,29 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
   }
   
   function openModalSetoran() { document.getElementById("modalSetoranTitle").innerText = "Formulir Setoran"; document.getElementById("btnSimpanSaja").innerHTML = "Simpan Saja"; document.getElementById("btnSimpanKirim").innerHTML = '<i class="fab fa-whatsapp mr-1.5"></i> Simpan & Kirim WA'; document.getElementById("modalSetoran").classList.remove("hidden"); }
-  function closeModalSetoran() { document.getElementById("modalSetoran").classList.add("hidden"); document.getElementById("formSetoran").reset(); document.getElementById("is_edit").value = "false"; document.getElementById("timestamp_lama").value = ""; document.getElementById("tahun_lama").value = ""; showInfoGereja(); }
-
-  function applyDataToSetoranForm(data) {
+ 
+function applyDataToSetoranForm(data) {
     document.getElementById("is_edit").value = "true"; document.getElementById("timestamp_lama").value = data.timestamp_lama; document.getElementById("tahun_lama").value = data.tahun;
     const gerejaAsli = masterDataGereja.find(g => g.id.toString() === (data.id_gereja || data.id).toString()), wil = gerejaAsli ? gerejaAsli.wilayah : "";
     document.getElementById("formSetoranWilayah").value = wil; document.getElementById("id_gereja").innerHTML = '<option value="">-- Pilih Gereja --</option>' + masterDataGereja.filter(g => !wil || String(g.wilayah) === String(wil)).map(i => `<option value="${i.id}">${i.nama}</option>`).join(""); document.getElementById("id_gereja").value = data.id_gereja || data.id; showInfoGereja();
     document.getElementsByName("bulan")[0].value = data.bulan; document.getElementById("formSetoranTahun").value = data.tahun;
-    document.getElementsByName("bakti_bulanan")[0].value = data.bakti_bulanan || data.bakti; document.getElementsByName("tgl_bakti")[0].value = data.tglBakti || data.tgl_bakti || "";
-    document.getElementsByName("pers_2")[0].value = data.pers_2 || data.pers2; document.getElementsByName("tgl_pers2")[0].value = data.tglPers2 || data.tgl_pers2 || "";
-    document.getElementsByName("amplop_paskah")[0].value = data.amplop_paskah || data.paskah; document.getElementsByName("tgl_paskah")[0].value = data.tglPaskah || data.tgl_paskah || "";
-    document.getElementsByName("amplop_hut")[0].value = data.amplop_hut || data.hut; document.getElementsByName("tgl_hut")[0].value = data.tglHut || data.tgl_hut || "";
-    document.getElementsByName("amplop_pentakosta")[0].value = data.amplop_pentakosta || data.pentakosta; document.getElementsByName("tgl_pentakosta")[0].value = data.tglPentakosta || data.tgl_pentakosta || "";
-    document.getElementsByName("amplop_natal")[0].value = data.amplop_natal || data.natal; document.getElementsByName("tgl_natal")[0].value = data.tglNatal || data.tgl_natal || "";
-    document.getElementsByName("setoran_lainnya")[0].value = data.setoran_lainnya || data.lainnya; document.getElementsByName("tgl_lainnya")[0].value = data.tglLainnya || data.tgl_lainnya || ""; document.getElementsByName("ket_lainnya")[0].value = data.ketLainnya || data.ket_lainnya || "";
+    
+    // PEMASANGAN TITIK OTOMATIS SAAT EDIT
+    const setNominal = (name, val) => { 
+        let num = Number(String(val).replace(/[^0-9]/g, '')) || 0; 
+        document.getElementsByName(name)[0].value = num > 0 ? num.toLocaleString('id-ID') : ""; 
+    };
+    
+    setNominal("bakti_bulanan", data.bakti_bulanan || data.bakti); document.getElementsByName("tgl_bakti")[0].value = data.tglBakti || data.tgl_bakti || "";
+    setNominal("pers_2", data.pers_2 || data.pers2); document.getElementsByName("tgl_pers2")[0].value = data.tglPers2 || data.tgl_pers2 || "";
+    setNominal("amplop_paskah", data.amplop_paskah || data.paskah); document.getElementsByName("tgl_paskah")[0].value = data.tglPaskah || data.tgl_paskah || "";
+    setNominal("amplop_hut", data.amplop_hut || data.hut); document.getElementsByName("tgl_hut")[0].value = data.tglHut || data.tgl_hut || "";
+    setNominal("amplop_pentakosta", data.amplop_pentakosta || data.pentakosta); document.getElementsByName("tgl_pentakosta")[0].value = data.tglPentakosta || data.tgl_pentakosta || "";
+    setNominal("amplop_natal", data.amplop_natal || data.natal); document.getElementsByName("tgl_natal")[0].value = data.tglNatal || data.tgl_natal || "";
+    setNominal("setoran_lainnya", data.setoran_lainnya || data.lainnya); document.getElementsByName("tgl_lainnya")[0].value = data.tglLainnya || data.tgl_lainnya || ""; document.getElementsByName("ket_lainnya")[0].value = data.ketLainnya || data.ket_lainnya || "";
+    
+    hitungTotalSetoranLive(); // Memanggil Kalkulasi Live Total
+
     document.getElementById("modalSetoranTitle").innerText = "Edit Setoran"; document.getElementById("btnSimpanSaja").innerHTML = "Update Saja"; document.getElementById("btnSimpanKirim").innerHTML = '<i class="fab fa-whatsapp mr-1.5"></i> Update & Kirim WA'; document.getElementById("modalSetoran").classList.remove("hidden");
   }
 
@@ -2121,6 +2136,32 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
         .sort(comparer(idx, !isAsc))
         .forEach(tr => tbody.appendChild(tr));
   });
+
+  // ==========================================
+  // FITUR: FORMAT RUPIAH OTOMATIS & LIVE TOTAL
+  // ==========================================
+  function formatDanKalkulasi(el) {
+      let val = el.value.replace(/[^0-9]/g, ''); // Bersihkan semua selain angka
+      if(val !== '') {
+          el.value = parseInt(val, 10).toLocaleString('id-ID'); // Pasang titik otomatis
+      } else {
+          el.value = '';
+      }
+      hitungTotalSetoranLive();
+  }
+
+  function hitungTotalSetoranLive() {
+      let names = ["bakti_bulanan", "pers_2", "amplop_paskah", "amplop_pentakosta", "amplop_hut", "amplop_natal", "setoran_lainnya"];
+      let total = 0;
+      names.forEach(n => {
+          let inputEl = document.getElementsByName(n)[0];
+          if(inputEl) {
+              let val = inputEl.value.replace(/[^0-9]/g, '');
+              total += Number(val) || 0;
+          }
+      });
+      document.getElementById("liveTotalSetoran").innerText = "Rp " + total.toLocaleString('id-ID');
+  }
 </script>
 </body>
 </html>

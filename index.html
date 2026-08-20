@@ -975,10 +975,18 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     else { el.innerText = "Rp " + saldo.toLocaleString('id-ID'); icon.classList.remove("fa-eye-slash"); icon.classList.add("fa-eye"); el.classList.add("text-slate-900"); el.classList.remove("text-slate-400"); }
   }
 
-  function broadcastWA(id) {
+ function broadcastWA(id) {
     const gereja = masterDataGereja.find(g => g.id.toString() === id.toString()); if(!gereja) return;
     const bln = document.getElementById("filterBulan").value, thn = document.getElementById("filterTahun").value;
-    Swal.fire({ title: 'Kirim Peringatan?', html: `<textarea id="waMessageInput" class="w-full p-3 border rounded text-sm" rows="6">Syalom Bapak/Ibu Pendeta dan Bendahara Jemaat,\n\nMengingatkan laporan keuangan dari *${gereja.nama}* untuk bulan *${bln} ${thn}* belum kami terima di Kantor Pusat. Mohon segera diinput. Terima kasih.</textarea>`, showCancelButton: true, confirmButtonText: '<i class="fab fa-whatsapp"></i> Kirim', confirmButtonColor: swalColor, preConfirm: () => document.getElementById('waMessageInput').value }).then((res) => {
+    
+    Swal.fire({ 
+      title: 'Kirim Peringatan?', 
+      html: `<textarea id="waMessageInput" class="w-full p-3 border rounded text-sm" rows="6">Syalom Bapak/Ibu Pendeta dan Bendahara Jemaat,\n\nKami dari bagian Keuangan Kantor Sinode GKPI mengingatkan Setoran Bakti Bulanan dari *${gereja.nama}* untuk bulan *${bln} ${thn}* belum kami terima di Kantor Pusat. Mohon segera disetorkan. Terima kasih.</textarea>`, 
+      showCancelButton: true, 
+      confirmButtonText: '<i class="fab fa-whatsapp"></i> Kirim', 
+      confirmButtonColor: swalColor, 
+      preConfirm: () => document.getElementById('waMessageInput').value 
+    }).then((res) => {
       if(res.isConfirmed) {
         if(!gereja.wa || gereja.wa === "-") return Swal.fire({title:'Gagal', text:'Nomor WA kosong.', icon:'error', confirmButtonColor: swalColor});
         Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });

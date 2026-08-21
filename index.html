@@ -770,7 +770,7 @@ const serverFunctions = [
   "hapusSetoran", "updateDataGereja", "simpanData", "updateSetoran",
   "buatDanKirimKwitansi", "simpanPengeluaran", "getPenggajianData",
   "generateGajiMassal", "simpanGajiPendeta", "buatDanKirimSlipGaji",
-  "broadcastGajiMassal", "importSetoranMassal","hapusPengeluaran", "updatePengeluaran","generateBukuKasPDF","simpanPemasukanLain", "hapusPemasukanLain", "updatePemasukanLain","getHistoryPemasukanLain", "transferEksternalKeJemaat"
+  "broadcastGajiMassal", "importSetoranMassal","hapusPengeluaran", "updatePengeluaran","generateBukuKasPDF","simpanPemasukanLain", "hapusPemasukanLain", "updatePemasukanLain","getHistoryPemasukanLain", "transferEksternalKeJemaat", "getMutasiTransferRaw"
 ];
 
 serverFunctions.forEach(funcName => {
@@ -1137,8 +1137,8 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
          if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
              tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
          }
-      })
-      .getRekapTahunan(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
+     })
+      .getMutasiTransferRaw(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
   }
   
   function renderTabelHistoryTransfer() {

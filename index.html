@@ -706,6 +706,28 @@
     </form>
   </div>
 </div>
+
+  <!-- MODAL PREVIEW PDF -->
+<div id="modalPreviewPDF" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-[100] flex justify-center items-center p-2 md:p-4 animate__animated animate__fadeIn">
+  <div class="bg-white w-full max-w-5xl h-[90vh] md:h-[95vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col relative">
+    
+    <!-- Header Modal -->
+    <div class="px-4 py-3 flex justify-between items-center border-b border-slate-200 bg-slate-50">
+       <h3 class="text-sm font-bold text-slate-800 flex items-center"><i class="fas fa-file-pdf text-rose-500 mr-2 text-lg"></i> Preview Laporan</h3>
+       <div class="flex items-center gap-2 md:gap-3">
+         <button id="btnDownloadPreviewPDF" class="bg-indigo-600 text-white px-3 md:px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-indigo-700 transition-colors flex items-center"><i class="fas fa-download mr-1.5"></i> <span class="hidden md:inline">Download PDF</span></button>
+         <button onclick="document.getElementById('modalPreviewPDF').classList.add('hidden'); document.getElementById('iframePreviewPDF').src='';" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+       </div>
+    </div>
+    
+    <!-- Tempat Menampilkan PDF -->
+    <div class="flex-1 w-full bg-slate-200/50 p-2 md:p-4">
+       <iframe id="iframePreviewPDF" class="w-full h-full rounded-xl border border-slate-300 bg-white shadow-sm" src=""></iframe>
+    </div>
+    
+  </div>
+</div>
+  
 <!-- ================= SCRIPTS ================= -->
 <script>
 // DEKLARASI VARIABEL GLOBAL (PENTING: Jangan dihapus)
@@ -2429,12 +2451,26 @@ function closeModalSetoran() {
       
       google.script.run.withSuccessHandler(res => {
           if(res.status) {
-              const link = document.createElement("a");
-              link.href = `data:application/pdf;base64,${res.data}`;
-              link.download = res.filename;
-              link.click();
               Swal.close();
-              document.getElementById('modalBukuKas').classList.add('hidden');
+              document.getElementById('modalBukuKas').classList.add('hidden'); // Tutup modal pilih tanggal
+              
+              // 1. Ubah data menjadi tautan PDF
+              const pdfDataUri = `data:application/pdf;base64,${res.data}`;
+              
+              // 2. Tampilkan PDF di dalam iframe (Preview)
+              document.getElementById('iframePreviewPDF').src = pdfDataUri;
+              
+              // 3. Pasang aksi ke tombol Download di dalam preview
+              const btnDownload = document.getElementById('btnDownloadPreviewPDF');
+              btnDownload.onclick = function() {
+                  const link = document.createElement("a");
+                  link.href = pdfDataUri;
+                  link.download = res.filename;
+                  link.click();
+              };
+              
+              // 4. Buka jendela Preview
+              document.getElementById('modalPreviewPDF').classList.remove('hidden');
           } else {
               Swal.fire("Gagal", res.message, "error");
           }

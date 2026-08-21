@@ -934,6 +934,29 @@ serverFunctions.forEach(funcName => {
     else if(tab === 'historyPengeluaran') { document.getElementById('pageHistoryPengeluaran').classList.remove('hidden'); document.getElementById('btnHistoryPengeluaran').classList.add('nav-active'); inisialisasiHistoryPengeluaran(); } 
     else if(tab === 'penggajian') { document.getElementById('pagePenggajian').classList.remove('hidden'); document.getElementById('btnPenggajian').classList.add('nav-active'); muatDataPenggajian(); }
   }
+  function bukaLogAktivitas() {
+    Swal.fire({ title: 'Menarik Data CCTV...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run.withSuccessHandler(res => {
+      let html = "";
+      if (res.length === 0) {
+        html = `<tr><td colspan="3" class="p-5 text-center text-slate-500 italic">Belum ada aktivitas yang terekam.</td></tr>`;
+      } else {
+        res.forEach(item => {
+          let badgeColor = item.aksi.includes("HAPUS") ? "bg-rose-100 text-rose-700" : (item.aksi.includes("EDIT") || item.aksi.includes("UBAH") ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700");
+          
+          html += `<tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3 whitespace-nowrap text-slate-500 font-bold">${item.waktu}</td>
+            <td class="p-3"><span class="px-2 py-1 rounded-md text-[10px] font-black ${badgeColor}">${item.aksi}</span></td>
+            <td class="p-3 whitespace-normal min-w-[250px] leading-relaxed">${item.deskripsi}</td>
+          </tr>`;
+        });
+      }
+      document.getElementById('tabelLogAktivitas').innerHTML = html;
+      Swal.close();
+      document.getElementById('modalLogAktivitas').classList.remove('hidden');
+    }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).getLogAktivitas();
+  }
 
 function inisialisasiData() {
     showLoader("Sinkronisasi Server...", "Mengambil data terbaru Sinode GKPI");

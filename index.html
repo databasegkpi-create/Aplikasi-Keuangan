@@ -88,6 +88,11 @@
       <button onclick="switchTab('historyTransfer')" id="btnHistoryTransfer" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-list-ul w-5 text-center"></i> History Transfer</button>
       <button onclick="switchTab('historyPengeluaran')" id="btnHistoryPengeluaran" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-file-invoice-dollar w-5 text-center"></i> History Pengeluaran</button>
       <button onclick="switchTab('penggajian')" id="btnPenggajian" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"></button>
+      <button onclick="bukaLogAktivitasBerpassword()" id="btnLogAktivitasMenu" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-100 hover:text-slate-800 rounded-xl text-sm transition-colors">
+        <i class="fas fa-user-secret w-5 text-center"></i> 
+        <span class="flex-1 text-left">Log Aktivitas</span> 
+        <i class="fas fa-lock text-rose-400 text-xs" title="Terkunci"></i>
+      </button>
     </nav>
     <div class="p-4 border-t border-slate-100">
        <label for="inputFotoProfil" class="bg-slate-50 rounded-xl p-4 flex items-center gap-3 border border-slate-100 relative group cursor-pointer" title="Klik untuk ubah foto profil">
@@ -115,9 +120,7 @@
 <!-- TOMBOL IMPORT DENGAN KEAMANAN PIN -->
 <button onclick="bukaModalImportBerpassword()" class="admin-only bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-indigo-100 transition-all"><i class="fas fa-file-import md:mr-1.5"></i> <span class="hidden md:inline">Import CSV</span></button>
         
-        <!-- TOMBOL LOG AUDIT BARU -->
-        <button onclick="bukaLogAktivitas()" class="admin-only flex items-center px-4 py-2 bg-slate-800 text-white rounded-full text-[10px] md:text-xs font-bold hover:bg-slate-900 shadow-sm transition-all"><i class="fas fa-user-secret md:mr-1.5"></i> <span class="hidden md:inline">Log Audit</span></button>
-
+        
         <button onclick="openModalSetoran()" class="admin-only bg-brand-600 text-white px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm shadow-brand-500/30 hover:bg-brand-700 transition-all"><i class="fas fa-plus md:mr-1.5"></i> <span class="hidden md:inline">Buat Setoran</span></button>
         
         <button onclick="bukaModalPemLainBaru()" class="admin-only bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-full font-bold text-[10px] md:text-xs shadow-sm hover:bg-emerald-100 transition-all"><i class="fas fa-hand-holding-usd md:mr-1.5"></i> <span class="hidden md:inline">Non-Jemaat</span></button>
@@ -933,6 +936,47 @@ serverFunctions.forEach(funcName => {
     else if(tab === 'historyTransfer') { document.getElementById('pageHistoryTransfer').classList.remove('hidden'); document.getElementById('btnHistoryTransfer').classList.add('nav-active'); inisialisasiHistoryTransfer(); } 
     else if(tab === 'historyPengeluaran') { document.getElementById('pageHistoryPengeluaran').classList.remove('hidden'); document.getElementById('btnHistoryPengeluaran').classList.add('nav-active'); inisialisasiHistoryPengeluaran(); } 
     else if(tab === 'penggajian') { document.getElementById('pagePenggajian').classList.remove('hidden'); document.getElementById('btnPenggajian').classList.add('nav-active'); muatDataPenggajian(); }
+  }
+  // ==========================================
+  // FITUR: KEAMANAN PIN UNTUK LOG AKTIVITAS
+  // ==========================================
+  function bukaLogAktivitasBerpassword() {
+    Swal.fire({
+      title: '<i class="fas fa-user-secret text-slate-700 mb-2 text-3xl"></i><br>Otorisasi Khusus',
+      html: '<p class="text-xs text-slate-500 font-medium">Masukkan PIN rahasia untuk melihat jejak audit sistem.</p>',
+      input: 'password',
+      inputPlaceholder: 'Masukkan PIN...',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off',
+        maxlength: 10,
+        autocomplete: 'new-password',
+        readonly: true,
+      },
+      didOpen: () => {
+        const input = Swal.getInput();
+        input.removeAttribute('readonly');
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Buka Akses',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#1e293b',
+      cancelButtonColor: '#94a3b8',
+      preConfirm: (pin) => {
+        // GANTI "4587" JIKA INGIN PIN YANG BERBEDA DENGAN FITUR IMPORT
+        if (pin === '4587') {
+          return true;
+        } else {
+          Swal.showValidationMessage('PIN Salah! Akses ditolak.');
+          return false;
+        }
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Jika PIN benar, jalankan fungsi penarik data CCTV
+        bukaLogAktivitas();
+      }
+    });
   }
   function bukaLogAktivitas() {
     Swal.fire({ title: 'Menarik Data CCTV...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });

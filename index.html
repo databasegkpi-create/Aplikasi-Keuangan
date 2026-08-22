@@ -88,10 +88,9 @@
       <button onclick="switchTab('historyTransfer')" id="btnHistoryTransfer" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-list-ul w-5 text-center"></i> History Transfer</button>
       <button onclick="switchTab('historyPengeluaran')" id="btnHistoryPengeluaran" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-file-invoice-dollar w-5 text-center"></i> History Pengeluaran</button>
       <button onclick="switchTab('penggajian')" id="btnPenggajian" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"></button>
-      <button onclick="bukaLogAktivitasBerpassword()" id="btnLogAktivitasMenu" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-100 hover:text-slate-800 rounded-xl text-sm transition-colors">
+      <button onclick="switchTab('logAktivitas')" id="btnLogAktivitasMenu" class="super-admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-100 hover:text-slate-800 rounded-xl text-sm transition-colors">
         <i class="fas fa-user-secret w-5 text-center"></i> 
         <span class="flex-1 text-left">Log Aktivitas</span> 
-        <i class="fas fa-lock text-rose-400 text-xs" title="Terkunci"></i>
       </button>
     </nav>
     <div class="p-4 border-t border-slate-100">
@@ -117,9 +116,7 @@
         
         <button onclick="bukaModalRekap()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"><i class="fas fa-file-pdf md:mr-1.5 text-slate-400"></i> <span class="hidden md:inline">Rekap PDF</span></button>
         
-<!-- TOMBOL IMPORT DENGAN KEAMANAN PIN -->
-<button onclick="bukaModalImportBerpassword()" class="admin-only bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-indigo-100 transition-all"><i class="fas fa-file-import md:mr-1.5"></i> <span class="hidden md:inline">Import CSV</span></button>
-        
+<button onclick="bukaModalImport()" class="super-admin-only bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-indigo-100 transition-all"><i class="fas fa-file-import md:mr-1.5"></i> <span class="hidden md:inline">Import CSV</span></button>       
         
         <button onclick="openModalSetoran()" class="admin-only bg-brand-600 text-white px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm shadow-brand-500/30 hover:bg-brand-700 transition-all"><i class="fas fa-plus md:mr-1.5"></i> <span class="hidden md:inline">Buat Setoran</span></button>
         
@@ -826,8 +823,7 @@ serverFunctions.forEach(funcName => {
        Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 
-    // Tembak API secara langsung tanpa antrian (Kecepatan Maksimal)
-    fetch(API_URL, {
+   fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ func: funcName, args: args })
@@ -874,19 +870,32 @@ serverFunctions.forEach(funcName => {
       document.getElementById("globalLoader").classList.remove("flex"); 
   }
 
-  function applyRoleUI() {
-    const role = sessionStorage.getItem("user_role") || "user";
+function applyRoleUI() {
+    const role = (sessionStorage.getItem("user_role") || "visitor").toLowerCase();
     document.getElementById("welcomeUserName").innerText = sessionStorage.getItem("user_name") || "User";
-    let roleText = "Viewer"; if(role === 'admin') roleText = "Administrator"; if(role === 'kabiro') roleText = "Ka. Biro Keuangan";
+    
+    let roleText = "Visitor"; 
+    if(role === 'admin') roleText = "Admin"; 
+    if(role === 'super admin' || role === 'superadmin' || role === 'kabiro') roleText = "Super Admin"; 
     document.getElementById("welcomeUserRole").innerText = roleText;
     
     let styleEl = document.getElementById("roleStyle");
     if(!styleEl) { styleEl = document.createElement("style"); styleEl.id = "roleStyle"; document.head.appendChild(styleEl); }
-    styleEl.innerHTML = (role !== "admin" && role !== "kabiro") ? ".admin-only { display: none !important; }" : "";
+    
+    // ATURAN 3 LEVEL OTORITAS
+    let cssRules = "";
+    if (role === "visitor") {
+       cssRules = ".admin-only, .super-admin-only { display: none !important; }"; // Visitor tidak bisa klik menu admin
+    } else if (role === "admin") {
+       cssRules = ".super-admin-only { display: none !important; }"; // Admin bisa edit/tambah, tapi log & import ditutup
+    } else {
+       cssRules = ""; // Super Admin terbuka semua
+    }
+    styleEl.innerHTML = cssRules;
 
     const btnGaji = document.getElementById("btnPenggajian");
     if(btnGaji) {
-        btnGaji.innerHTML = (role !== "kabiro") 
+        btnGaji.innerHTML = (role !== "super admin" && role !== "superadmin" && role !== "kabiro") 
             ? '<i class="fas fa-hand-holding-usd w-5 text-center"></i> <span class="flex-1 text-left">Penggajian Pendeta</span> <i class="fas fa-lock text-rose-400 text-xs" title="Terkunci"></i>'
             : '<i class="fas fa-hand-holding-usd w-5 text-center"></i> <span class="flex-1 text-left">Penggajian Pendeta</span>';
     }
@@ -948,27 +957,7 @@ serverFunctions.forEach(funcName => {
     // JALUR MENU BARU LOG AKTIVITAS
     else if(tab === 'logAktivitas') { document.getElementById('pageLogAktivitas').classList.remove('hidden'); document.getElementById('btnLogAktivitasMenu').classList.add('nav-active'); loadLogAktivitasData(); }
   }
-  // FITUR: KEAMANAN PIN UNTUK LOG AKTIVITAS
-  function bukaLogAktivitasBerpassword() {
-    Swal.fire({
-      title: '<i class="fas fa-user-secret text-slate-700 mb-2 text-3xl"></i><br>Otorisasi Khusus',
-      html: '<p class="text-xs text-slate-500 font-medium">Masukkan PIN rahasia untuk melihat jejak audit sistem.</p>',
-      input: 'password',
-      inputPlaceholder: 'Masukkan PIN...',
-      inputAttributes: { autocapitalize: 'off', autocorrect: 'off', maxlength: 10, autocomplete: 'new-password', readonly: true },
-      didOpen: () => { const input = Swal.getInput(); input.removeAttribute('readonly'); },
-      showCancelButton: true, confirmButtonText: 'Buka Akses', cancelButtonText: 'Batal', confirmButtonColor: '#1e293b', cancelButtonColor: '#94a3b8',
-      preConfirm: (pin) => {
-        if (pin === '4587') { return true; } 
-        else { Swal.showValidationMessage('PIN Salah! Akses ditolak.'); return false; }
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Pindah ke tab halaman Penuh, bukan Popup
-        switchTab('logAktivitas');
-      }
-    });
-  }
+  
 
   // FITUR: TARIK DATA LOG KE HALAMAN PENUH
   function loadLogAktivitasData() {
@@ -2221,49 +2210,11 @@ function closeModalSetoran() {
       });
     }
   }
-  
-  // ==========================================
-  // FITUR: KEAMANAN PIN UNTUK IMPORT DATA
-  // ==========================================
-  function bukaModalImportBerpassword() {
-    Swal.fire({
-      title: '<i class="fas fa-lock text-rose-500 mb-2 text-3xl"></i><br>Otorisasi Khusus',
-      html: '<p class="text-xs text-slate-500 font-medium">Masukkan PIN rahasia untuk menggunakan fitur Import Data Massal.</p>',
-      input: 'password',
-      inputPlaceholder: 'Masukkan PIN...',
-      inputAttributes: {
-        autocapitalize: 'off',
-        autocorrect: 'off',
-        maxlength: 10,
-        autocomplete: 'new-password', // Ini mencegah Chrome mengisi otomatis
-        readonly: true, // Trik tambahan agar tidak di-autofill saat baru muncul
-      },
-      didOpen: () => {
-        // Membuka kunci kolom saat pengguna mulai mengklik (Mencegah autofill paksa)
-        const input = Swal.getInput();
-        input.removeAttribute('readonly');
-      },
-      showCancelButton: true,
-      confirmButtonText: 'Buka Akses',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#7c3aed',
-      cancelButtonColor: '#94a3b8',
-      preConfirm: (pin) => {
-        // GANTI "123456" DENGAN PIN RAHASIA ANDA
-        if (pin === '4587') {
-          return true;
-        } else {
-          Swal.showValidationMessage('PIN Salah! Akses ditolak.');
-          return false;
-        }
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const modal = document.getElementById('modalImport');
-        modal.classList.remove('hidden');
-        setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
-      }
-    });
+ // BUKA MODAL IMPORT LANGSUNG TANPA PIN (Khusus Super Admin)
+  function bukaModalImport() {
+      const modal = document.getElementById('modalImport');
+      modal.classList.remove('hidden');
+      setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
   }
   // ==========================================
   // FITUR: EDIT & HAPUS PENGELUARAN

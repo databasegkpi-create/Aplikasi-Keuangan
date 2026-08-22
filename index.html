@@ -87,7 +87,7 @@
       <button onclick="switchTab('historyPemLain')" id="btnHistoryPemLain" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-hand-holding-usd w-5 text-center"></i> History Eksternal</button>
       <button onclick="switchTab('historyTransfer')" id="btnHistoryTransfer" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-list-ul w-5 text-center"></i> History Transfer</button>
       <button onclick="switchTab('historyPengeluaran')" id="btnHistoryPengeluaran" class="admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-file-invoice-dollar w-5 text-center"></i> History Pengeluaran</button>
-      <button onclick="switchTab('penggajian')" id="btnPenggajian" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"></button>
+      <button onclick="switchTab('penggajian')" id="btnPenggajian" class="super-admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"></button>
       <button onclick="switchTab('logAktivitas')" id="btnLogAktivitasMenu" class="super-admin-only w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-100 hover:text-slate-800 rounded-xl text-sm transition-colors">
         <i class="fas fa-user-secret w-5 text-center"></i> 
         <span class="flex-1 text-left">Log Aktivitas</span> 
@@ -823,10 +823,10 @@ serverFunctions.forEach(funcName => {
        Swal.fire('Error API', 'Variabel API_URL belum diisi dengan link Google.', 'error'); return;
     }
 
-   fetch(API_URL, {
+  fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ func: funcName, args: args })
+      body: JSON.stringify({ func: funcName, args: args, active_user: sessionStorage.getItem("user_name") || "Sistem" })
     })
     .then(response => response.json())
     .then(data => {
@@ -939,9 +939,14 @@ function applyRoleUI() {
     document.getElementById("btnLogin").innerText = "Masuk Aplikasi"; 
     document.getElementById("btnLogin").disabled = false; 
   }
-  
   function switchTab(tab) {
-    if(tab === 'penggajian' && (sessionStorage.getItem("user_role") || "user") !== 'kabiro') return Swal.fire({ icon: 'warning', title: 'Akses Terkunci', text: 'Mohon maaf, menu Penggajian Pendeta hanya dapat diakses oleh Ka. Biro Keuangan.', confirmButtonColor: '#ef4444' });
+    // 1. Ambil Role User yang sedang login
+    const userRole = (sessionStorage.getItem("user_role") || "visitor").toLowerCase();
+    
+    // 2. Kunci halaman penggajian HANYA untuk Super Admin / Kabiro
+    if(tab === 'penggajian' && userRole !== 'super admin' && userRole !== 'superadmin' && userRole !== 'kabiro') {
+        return Swal.fire({ icon: 'warning', title: 'Akses Terkunci', text: 'Menu Penggajian hanya dapat diakses oleh Super Admin.', confirmButtonColor: '#ef4444' });
+    }
     
     ['pageDashboard', 'pageDirektori', 'pagePengeluaran', 'pageHistoryPemLain', 'pageHistoryTransfer', 'pageHistoryPengeluaran', 'pagePenggajian', 'pageLogAktivitas'].forEach(id => { let el = document.getElementById(id); if(el) el.classList.add('hidden'); });
     ['btnDashboard', 'btnDirektori', 'btnPengeluaran', 'btnHistoryPemLain', 'btnHistoryTransfer', 'btnHistoryPengeluaran', 'btnPenggajian', 'btnLogAktivitasMenu'].forEach(id => { let el = document.getElementById(id); if(el) el.classList.remove('nav-active'); });

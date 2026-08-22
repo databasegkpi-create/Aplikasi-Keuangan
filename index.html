@@ -1299,7 +1299,8 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
                    tanggalTransfer: sub.tgl, 
                    id_gereja: item.id, 
                    bulan: item.bulan, 
-                   tahun: item.tahun 
+                   tahun: item.tahun,
+                   timestamp_lama: item.timestamp_lama // ---> PERBAIKAN 1: Bawa KTP/ID Waktu <---
                });
            }
        });
@@ -1339,6 +1340,8 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
            let p = fTgl.split('-'); 
            if(p.length === 3) fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
        }
+       
+       // ---> PERBAIKAN 2: Lempar timestamp_lama ke dalam tombol onclick <---
        html += `
          <tr class="hover:bg-slate-50 transition-colors">
            <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-brand-500 mr-1.5"></i>${fTgl}</td>
@@ -1347,8 +1350,8 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
            <td class="text-slate-500 py-3 px-4 border-b"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${r.jenis}</span></td>
            <td class="text-right font-black text-brand-600 py-3 px-4 border-b">Rp ${r.nominal.toLocaleString('id-ID')}</td>
            <td class="text-center py-3 px-4 border-b admin-only">
-             <button onclick="editPemasukanDariHistory('${r.id_gereja}', '${r.bulan}', '${r.tahun}')" class="text-slate-400 hover:text-brand-600 p-1" title="Edit Setoran"><i class="fas fa-edit"></i></button>
-             <button onclick="hapusPemasukanDariHistory('${r.id_gereja}', '${r.bulan}', '${r.tahun}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus Setoran"><i class="fas fa-trash-alt"></i></button>
+             <button onclick="editPemasukanDariHistory('${r.id_gereja}', '${r.bulan}', '${r.tahun}', '${r.timestamp_lama}')" class="text-slate-400 hover:text-brand-600 p-1" title="Edit Setoran"><i class="fas fa-edit"></i></button>
+             <button onclick="hapusPemasukanDariHistory('${r.id_gereja}', '${r.bulan}', '${r.tahun}', '${r.timestamp_lama}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus Setoran"><i class="fas fa-trash-alt"></i></button>
            </td>
          </tr>
        `;
@@ -1378,6 +1381,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
         }
     }
   }
+  
   // FUNGSI BARU UNTUK BERPINDAH HALAMAN
   function changePageMutasi(newPage) {
       currentPageMutasi = newPage;
@@ -1659,10 +1663,10 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     }).getInitialSync(bln, thn, filterObj);
   }
 
-  function hapusPemasukanDariHistory(id_gereja, bulan, tahun) {
+ function hapusPemasukanDariHistory(id_gereja, bulan, tahun, timestamp_lama) {
     Swal.fire({
       title: 'Hapus Data Setoran?',
-      html: `Anda yakin ingin menghapus seluruh data setoran bulan <b>${bulan} ${tahun}</b>?<br><br><span class="text-xs text-rose-500">Tindakan ini akan menghapus data secara permanen dari database.</span>`,
+      html: `Anda yakin ingin menghapus setoran bulan <b>${bulan} ${tahun}</b> ini?<br><br><span class="text-xs text-rose-500">Tindakan ini akan menghapus data secara permanen dari database.</span>`,
       icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8',
       confirmButtonText: '<i class="fas fa-trash-alt"></i> Ya, Hapus!', cancelButtonText: 'Batal'
     }).then((result) => {
@@ -1672,7 +1676,12 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           Swal.close(); 
           if(res.status) { 
             animatedAlert('success', 'Dihapus!', res.message); 
-            globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id) === String(id_gereja) && m.bulan === bulan && String(m.tahun) === String(tahun)));
+            // Hapus tepat 1 baris di layar berdasarkan timestamp
+            if (timestamp_lama && timestamp_lama !== "undefined") {
+                globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => m.timestamp_lama !== timestamp_lama);
+            } else {
+                globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id) === String(id_gereja) && m.bulan === bulan && String(m.tahun) === String(tahun)));
+            }
             renderTabelHistoryTransfer(); 
             refreshBackgroundSilent(); 
           } else { 
@@ -1680,7 +1689,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           } 
         }).withFailureHandler(err => { 
           Swal.close(); Swal.fire('Error Server', err.message, 'error'); 
-        }).hapusSetoran(id_gereja, bulan, tahun);
+        }).hapusSetoran(id_gereja, bulan, tahun, timestamp_lama);
       }
     });
   }
@@ -1772,8 +1781,17 @@ function applyDataToSetoranForm(data) {
 
   function editPemasukan(index) { applyDataToSetoranForm(globalDataPemasukan[index]); }
   function editPemasukanDariDirektori(index) { closeModalDetail(); applyDataToSetoranForm(currentRiwayatGereja[index]); }
-  function editPemasukanDariHistory(id_gereja, bulan, tahun) { const data = globalDataSemuaMutasi.find(item => String(item.id) === String(id_gereja) && item.bulan === bulan && String(item.tahun) === String(tahun)); if(!data) return Swal.fire('Error', 'Data asli tidak ditemukan.', 'error'); applyDataToSetoranForm(data); }
-
+  function editPemasukanDariHistory(id_gereja, bulan, tahun, timestamp_lama) { 
+      let data;
+      if (timestamp_lama && timestamp_lama !== "undefined") {
+          data = globalDataSemuaMutasi.find(item => item.timestamp_lama === timestamp_lama);
+      } else {
+          data = globalDataSemuaMutasi.find(item => String(item.id) === String(id_gereja) && item.bulan === bulan && String(item.tahun) === String(tahun)); 
+      }
+      if(!data) return Swal.fire('Error', 'Data asli tidak ditemukan.', 'error'); 
+      applyDataToSetoranForm(data); 
+  }
+  
   function submitSetoran(e) {
     e.preventDefault(); 
     const formObj = Object.fromEntries(new FormData(e.target).entries());

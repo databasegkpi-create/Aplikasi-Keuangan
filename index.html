@@ -1798,19 +1798,16 @@ function applyDataToSetoranForm(data) {
     e.preventDefault(); 
     const formObj = Object.fromEntries(new FormData(e.target).entries());
 
-    // ==========================================
-    // FITUR KEAMANAN 1: BLOKIR JIKA TOTAL = 0
+ // ==========================================
+    // FITUR KEAMANAN 1: BLOKIR JIKA TOTAL = 0 & BERSIHKAN TITIK
     // ==========================================
     let names = ["bakti_bulanan", "pers_2", "amplop_paskah", "amplop_pentakosta", "amplop_hut", "amplop_natal", "setoran_lainnya"];
     let totalNominal = 0;
     names.forEach(n => {
         let val = formObj[n] ? String(formObj[n]).replace(/[^0-9]/g, '') : "0";
+        formObj[n] = val; // KUNCI: Ubah "1.000" menjadi angka murni "1000" sebelum ke server
         totalNominal += Number(val) || 0;
     });
-    if(totalNominal <= 0) {
-        Swal.fire('Data Kosong!', 'Total setoran tidak boleh Rp 0. Masukkan nominal uang yang valid.', 'warning');
-        return; 
-    }
 
     // ==========================================
     // FITUR KEAMANAN 2: CEGAT NAMA GEREJA ILEGAL
@@ -2591,9 +2588,10 @@ function closeModalSetoran() {
     });
   }
 
-  function submitPemLain(e) {
+function submitPemLain(e) {
     e.preventDefault(); const formObj = Object.fromEntries(new FormData(e.target).entries());
     let valBersih = formObj.jumlah.replace(/[^0-9]/g, '');
+    formObj.jumlah = valBersih; // KUNCI: Bersihkan titik sebelum dikirim ke server
     if (Number(valBersih) <= 0) return Swal.fire('Data Kosong!', 'Nominal tidak boleh 0.', 'warning');
 
     const btn = document.getElementById("btnSubmitPemLain"); const ori = btn.innerHTML;

@@ -77,10 +77,12 @@
         <img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" alt="Logo GKPI" class="w-9 h-9 object-contain drop-shadow-sm">
         <div><h1 class="font-black text-lg text-slate-800 tracking-tight leading-none">Sinode GKPI</h1><span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Keuangan</span></div>
       </div>
-     <div class="flex items-center gap-4">
-        <button onclick="toggleSidebar()" class="text-slate-500 text-lg hover:text-slate-800 transition-colors"><i class="fas fa-bars"></i></button>
+      <!-- Tombol Silang untuk Menutup Sidebar -->
+      <button onclick="toggleSidebar()" class="text-slate-400 text-lg hover:text-slate-700 transition-colors"><i class="fas fa-times"></i></button>
     </div>
+    
     <div class="px-6 py-2"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Menu Utama</p></div>
+    
     <nav class="flex-1 px-4 space-y-1.5 overflow-y-auto">
       <button onclick="switchTab('dashboard')" id="btnDashboard" class="w-full nav-active flex items-center gap-3 px-4 py-3 text-slate-500 font-medium text-sm transition-colors hover:bg-slate-50 rounded-xl"><i class="fas fa-border-all w-5 text-center"></i> Dashboard</button>
       <button onclick="switchTab('direktori')" id="btnDirektori" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl text-sm transition-colors"><i class="fas fa-building w-5 text-center"></i> Data Pemasukan</button>
@@ -94,6 +96,7 @@
         <span class="flex-1 text-left">Log Aktivitas</span> 
       </button>
     </nav>
+    
     <div class="p-4 border-t border-slate-100">
        <label for="inputFotoProfil" class="bg-slate-50 rounded-xl p-4 flex items-center gap-3 border border-slate-100 relative group cursor-pointer" title="Klik untuk ubah foto profil">
          <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-bold overflow-hidden relative border border-brand-200 shrink-0 shadow-sm">
@@ -104,10 +107,10 @@
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col h-full w-full overflow-hidden relative">
-    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-slate-200 flex justify-between items-center h-[72px]">
+  <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-slate-200 flex justify-between items-center h-[72px]">
       <div class="flex items-center gap-4">
-        <button onclick="toggleSidebar()" class="md:hidden text-slate-500 text-lg hover:text-slate-800 transition-colors"><i class="fas fa-bars"></i></button>
+        <!-- Tombol ini sekarang akan selalu muncul di laptop maupun HP -->
+        <button onclick="toggleSidebar()" class="text-slate-500 text-lg hover:text-slate-800 transition-colors"><i class="fas fa-bars"></i></button>
         <div class="hidden md:flex items-center bg-slate-100 px-4 py-2 rounded-full border border-slate-200 w-64">
            <i class="fas fa-search text-slate-400 text-xs"></i><input type="text" placeholder="Search anything..." class="bg-transparent border-none outline-none text-xs ml-2 w-full text-slate-600">
         </div>

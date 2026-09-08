@@ -1255,13 +1255,22 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
      })
       .getMutasiTransferRaw(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
   }
+  // ==========================================
+  // GLOBAL SORTING: HISTORY TRANSFER WAKTU INPUT
+  // ==========================================
+  let arahSortWaktuMutasi = 'desc'; 
   
+  function toggleSortWaktuMutasi(event) {
+      if(event) event.stopPropagation(); // Mencegah bentrok dengan Smart Sort biasa
+      arahSortWaktuMutasi = (arahSortWaktuMutasi === 'desc') ? 'asc' : 'desc';
+      currentPageMutasi = 1; // Otomatis kembali ke halaman 1 saat diurutkan
+      renderTabelHistoryTransfer();
+  }
+
   function renderTabelHistoryTransfer() {
     const tMulai = document.getElementById("filterTglMulai").value;
     const tSelesai = document.getElementById("filterTglSelesai").value;
     const search = document.getElementById("searchHistoryTransfer").value.toLowerCase();
-    
-    // PENAMBAHAN: Menangkap nilai dari dropdown Wilayah dan Jenis
     const wil = document.getElementById("filterHistoryWilayah").value;
     const jen = document.getElementById("filterHistoryJenis").value;
     
@@ -1294,8 +1303,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     globalDataSemuaMutasi.forEach(item => {
        let grj = masterDataGereja.find(g => String(g.id) === String(item.id));
        let namaGrj = grj ? grj.nama : "Gereja ID: " + item.id;
-       let wilGrj = grj ? grj.wilayah : ""; // Mengikat info Wilayah ke dalam objek
-       
+       let wilGrj = grj ? grj.wilayah : ""; 
        let ket = item.ketLainnya ? String(item.ketLainnya).trim() : "";
        let teksLainnya = (ket !== "" && ket !== "-") ? `Lainnya (${ket})` : "Setoran Lainnya";
        
@@ -1308,33 +1316,30 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
         { jenis: teksLainnya, nominal: parseNom(item.lainnya), tgl: normalizeDate(item.tglLainnya) }].forEach(sub => { 
            if (sub.nominal > 0 && sub.tgl) {
                expandedMutasi.push({ 
-                   namaGereja: namaGrj, 
-                   wilayah: wilGrj, 
-                   periode: item.bulan + " " + item.tahun, 
-                   jenis: sub.jenis, 
-                   nominal: sub.nominal, 
-                   tanggalTransfer: sub.tgl, 
-                   id_gereja: item.id, 
-                   bulan: item.bulan, 
-                   tahun: item.tahun,
-                   timestamp_lama: item.timestamp_lama // ---> PERBAIKAN 1: Bawa KTP/ID Waktu <---
+                   namaGereja: namaGrj, wilayah: wilGrj, periode: item.bulan + " " + item.tahun, 
+                   jenis: sub.jenis, nominal: sub.nominal, tanggalTransfer: sub.tgl, 
+                   id_gereja: item.id, bulan: item.bulan, tahun: item.tahun, timestamp_lama: item.timestamp_lama 
                });
            }
        });
     });
 
-    // PENAMBAHAN LOGIKA FILTER: Menyaring berdasarkan Tgl, Search, Wilayah, dan Jenis Setoran
     let filtered = expandedMutasi.filter(m => {
         let matchSearch = !search || m.namaGereja.toLowerCase().includes(search) || m.jenis.toLowerCase().includes(search);
         let matchMulai = !tMulai || m.tanggalTransfer >= tMulai;
         let matchSelesai = !tSelesai || m.tanggalTransfer <= tSelesai;
         let matchWil = !wil || String(m.wilayah) === String(wil);
-        let matchJen = !jen || m.jenis.includes(jen); // Memakai includes agar "Lainnya (Pembangunan)" tetap masuk ke kategori "Lainnya"
-        
+        let matchJen = !jen || m.jenis.includes(jen); 
         return matchSearch && matchMulai && matchSelesai && matchWil && matchJen;
     });
 
-    filtered.sort((a, b) => new Date(b.tanggalTransfer) - new Date(a.tanggalTransfer)); 
+    // PENGURUTAN GLOBAL (154 DATA SEKALIGUS) MENGGUNAKAN WAKTU INPUT PRESISI DETIK
+    filtered.sort((a, b) => {
+        let timeA = new Date(a.timestamp_lama).getTime() || 0;
+        let timeB = new Date(b.timestamp_lama).getTime() || 0;
+        return arahSortWaktuMutasi === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+
     window.currentFilteredMutasi = filtered;
     
     let totalNominal = 0;
@@ -1352,14 +1357,12 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
 
     let html = "";
     paginatedData.forEach(r => {
-       // --- Format Tanggal Transfer ---
        let fTgl = r.tanggalTransfer; 
        if(fTgl) { 
            let p = fTgl.split('-'); 
            if(p.length === 3) fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
        }
        
-       // --- Format Waktu Input (Timestamp) ---
        let rawTs = r.timestamp_lama || "";
        let fWaktuInput = "-";
        if(rawTs && rawTs !== "undefined") {
@@ -1374,10 +1377,9 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
            }
        }
        
-       // ---> PERBAIKAN: Menambahkan <td Waktu Input> dengan hidden span untuk Smart Sort <---
        html += `
          <tr class="hover:bg-slate-50 transition-colors">
-           <td class="text-slate-500 py-3 px-4 border-b text-[10px]"><span class="hidden">${rawTs}</span><i class="fas fa-clock text-slate-400 mr-1"></i> ${fWaktuInput}</td>
+           <td class="text-slate-500 py-3 px-4 border-b text-[10px]"><i class="fas fa-clock text-slate-400 mr-1"></i> ${fWaktuInput}</td>
            <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-brand-500 mr-1.5"></i>${fTgl}</td>
            <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.namaGereja}</td>
            <td class="text-slate-600 py-3 px-4 border-b">${r.periode}</td>
@@ -1391,19 +1393,26 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
        `;
     });
     
-    // Perbaikan colspan menjadi 7 karena kolom bertambah
     tbody.innerHTML = html === "" ? '<tr><td colspan="7" class="p-6 text-center text-slate-400">Tidak ada mutasi transfer yang cocok.</td></tr>' : html;
-    document.getElementById("labelTotalMutasi").innerText = `Total: ${totalItems} Transaksi`;
+    document.getElementById("labelTotalMutasi").innerText = `Total: ${totalItems} Transaksi`; 
     document.getElementById("sumTotalDanaTransfer").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
+
+    // MENGUBAH TAMPILAN PANAH PADA HEADER & MEMASANG FUNGSI KLIK
+    const theadTr = tbody.previousElementSibling.querySelector("tr");
+    if(theadTr && theadTr.cells[0]) {
+        let iconPanah = arahSortWaktuMutasi === 'desc' ? '<i class="fas fa-sort-amount-down ml-1 text-brand-600"></i>' : '<i class="fas fa-sort-amount-up ml-1 text-brand-600"></i>';
+        theadTr.cells[0].innerHTML = `Waktu Input ${iconPanah}`;
+        theadTr.cells[0].onclick = toggleSortWaktuMutasi;
+        theadTr.cells[0].classList.add("cursor-pointer", "hover:bg-slate-100", "transition-colors");
+        theadTr.cells[0].title = "Klik untuk membalik urutan Waktu";
+    }
 
     if(paginationContainer) {
         if(totalItems === 0) {
             paginationContainer.innerHTML = '';
         } else {
             let infoText = `Menampilkan <b class="text-slate-700">${startIndex + 1} - ${Math.min(endIndex, totalItems)}</b> dari <b class="text-slate-700">${totalItems}</b> data`;
-            
             let btnPrev = `<button onclick="changePageMutasi(${currentPageMutasi - 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPageMutasi === 1 ? "disabled" : ""}><i class="fas fa-chevron-left mr-1"></i> Prev</button>`;
-            
             let btnNext = `<button onclick="changePageMutasi(${currentPageMutasi + 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPageMutasi === totalPages ? "disabled" : ""}>Next <i class="fas fa-chevron-right ml-1"></i></button>`;
 
             paginationContainer.innerHTML = `

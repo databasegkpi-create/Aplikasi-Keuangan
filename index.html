@@ -306,9 +306,12 @@
               <table class="w-full text-left whitespace-nowrap clean-table">
                 <thead class="bg-slate-50">
                   <tr>
-                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Tanggal Transaksi</th>
-                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Sumber / Keterangan</th>
-                    <th class="text-right py-3 px-4 font-bold text-slate-700 text-[11px]">Nominal (Rp)</th>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Waktu Input</th>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Tanggal Transfer</th>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Nama Jemaat Resort</th>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Periode Setoran</th>
+                    <th class="py-3 px-4 font-bold text-slate-700 text-[11px]">Jenis Setoran</th>
+                    <th class="text-right py-3 px-4 font-bold text-slate-700 text-[11px]">Jumlah</th>
                     <th class="text-center py-3 px-4 font-bold text-slate-700 text-[11px] admin-only">Aksi</th>
                   </tr>
                 </thead>
@@ -1234,7 +1237,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     
     const tbody = document.getElementById("tabelBodyHistoryTransfer");
     if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Sedang menyinkronkan data mutasi...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-500 font-bold"><i class="fas fa-circle-notch fa-spin text-brand-500 mr-2 text-lg"></i> Sedang menyinkronkan data mutasi...</td></tr>';
     }
     
     google.script.run
@@ -1244,7 +1247,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       })
       .withFailureHandler(err => { 
          if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
-             tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
+             tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-rose-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal Memuat: ${err.message}</td></tr>`;
          }
      })
       .getMutasiTransferRaw(document.getElementById("rekapTahun") ? document.getElementById("rekapTahun").value : new Date().getFullYear());
@@ -1263,7 +1266,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     const paginationContainer = document.getElementById("paginationMutasi");
     
     if (!globalDataSemuaMutasi || globalDataSemuaMutasi.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada data setoran.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada data setoran.</td></tr>';
         if(paginationContainer) paginationContainer.innerHTML = '';
         return;
     }
@@ -1346,15 +1349,32 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
 
     let html = "";
     paginatedData.forEach(r => {
+       // --- Format Tanggal Transfer ---
        let fTgl = r.tanggalTransfer; 
        if(fTgl) { 
            let p = fTgl.split('-'); 
            if(p.length === 3) fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; 
        }
        
-       // ---> PERBAIKAN 2: Lempar timestamp_lama ke dalam tombol onclick <---
+       // --- Format Waktu Input (Timestamp) ---
+       let rawTs = r.timestamp_lama || "";
+       let fWaktuInput = "-";
+       if(rawTs && rawTs !== "undefined") {
+           let dObj = new Date(rawTs);
+           if(!isNaN(dObj.getTime())) {
+               let dd = String(dObj.getDate()).padStart(2, '0');
+               let mm = String(dObj.getMonth() + 1).padStart(2, '0');
+               let yy = dObj.getFullYear();
+               let hh = String(dObj.getHours()).padStart(2, '0');
+               let mnt = String(dObj.getMinutes()).padStart(2, '0');
+               fWaktuInput = `${dd}/${mm}/${yy} ${hh}:${mnt}`;
+           }
+       }
+       
+       // ---> PERBAIKAN: Menambahkan <td Waktu Input> dengan hidden span untuk Smart Sort <---
        html += `
          <tr class="hover:bg-slate-50 transition-colors">
+           <td class="text-slate-500 py-3 px-4 border-b text-[10px]"><span class="hidden">${rawTs}</span><i class="fas fa-clock text-slate-400 mr-1"></i> ${fWaktuInput}</td>
            <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-brand-500 mr-1.5"></i>${fTgl}</td>
            <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.namaGereja}</td>
            <td class="text-slate-600 py-3 px-4 border-b">${r.periode}</td>
@@ -1367,8 +1387,10 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
          </tr>
        `;
     });
-    tbody.innerHTML = html === "" ? '<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada mutasi transfer yang cocok.</td></tr>' : html;
-    document.getElementById("labelTotalMutasi").innerText = `Total: ${totalItems} Transaksi`; 
+    
+    // Perbaikan colspan menjadi 7 karena kolom bertambah
+    tbody.innerHTML = html === "" ? '<tr><td colspan="7" class="p-6 text-center text-slate-400">Tidak ada mutasi transfer yang cocok.</td></tr>' : html;
+    document.getElementById("labelTotalMutasi").innerText = `Total: ${totalItems} Transaksi`;
     document.getElementById("sumTotalDanaTransfer").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
 
     if(paginationContainer) {

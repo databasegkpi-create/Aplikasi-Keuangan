@@ -1442,21 +1442,31 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       renderTabelHistoryTransfer();
   }
 
-// FUNGSI BARU: Tarik data dari layar yang sedang difilter untuk dicetak massal
+// FUNGSI: Tarik data dari layar untuk dibundel jadi PDF Kuitansi & PREVIEW
   function cetakKwitansiMassalLayar() {
     if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Kosong', 'Tidak ada data transfer pada filter saat ini.', 'warning');
     
-    // Cari transaksi mentah di globalDataSemuaMutasi berdasarkan timestamp yang difilter di layar
+    // Tarik transaksi mentah dari global berdasarkan filter layar
     let uniqueTimestamps = [...new Set(window.currentFilteredMutasi.map(m => m.timestamp_lama))];
     let rawDataToPrint = globalDataSemuaMutasi.filter(m => uniqueTimestamps.includes(m.timestamp_lama));
     
-    Swal.fire({ title: 'Merakit Kwitansi Massal...', text: 'Sistem sedang menggabungkan semua kuitansi menjadi 1 file PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'Merakit Kuitansi...', text: 'Menggabungkan semua kwitansi menjadi 1 file PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
     google.script.run.withSuccessHandler(res => { 
         if(res.status) { 
-           const link = document.createElement("a"); link.href = `data:application/pdf;base64,${res.data}`; link.download = res.filename; link.click(); Swal.close(); 
+           Swal.close(); 
+           // TAMPILKAN DI LAYAR PREVIEW
+           const pdfDataUri = `data:application/pdf;base64,${res.data}`;
+           document.getElementById('iframePreviewPDF').src = pdfDataUri;
+           
+           const btnDownload = document.getElementById('btnDownloadPreviewPDF');
+           btnDownload.onclick = function() {
+               const link = document.createElement("a"); link.href = pdfDataUri; link.download = res.filename; link.click();
+           };
+           
+           document.getElementById('modalPreviewPDF').classList.remove('hidden');
         } else { Swal.fire('Gagal', res.message, 'error'); } 
-    }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error')).cetakKwitansiMassalServer(rawDataToPrint);
+    }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).cetakKwitansiMassalServer(rawDataToPrint);
   }
 
   // ==========================================
@@ -1879,12 +1889,19 @@ function applyDataToSetoranForm(data) {
       if (actionType === 'simpan_saja') { 
         animatedAlert('success', 'Tersimpan!', 'Disimpan tanpa kwitansi.'); closeModalSetoran(); resetBtns(); refreshBackgroundSilent(); 
       } else {
-        formObj.cetak_saja = (actionType === 'simpan_cetak'); // Berikan penanda khusus ke backend
+        formObj.cetak_saja = (actionType === 'simpan_cetak'); 
         google.script.run.withSuccessHandler(kRes => { 
            if(kRes.status) {
                if(formObj.cetak_saja && kRes.base64) {
-                   animatedAlert('success', 'PDF Selesai!', 'Mendownload Kwitansi...');
-                   const link = document.createElement("a"); link.href = `data:application/pdf;base64,${kRes.base64}`; link.download = kRes.filename; link.click();
+                   // TAMPILKAN DI LAYAR PREVIEW
+                   animatedAlert('success', 'Tersimpan!', 'Menampilkan Preview PDF...');
+                   const pdfDataUri = `data:application/pdf;base64,${kRes.base64}`;
+                   document.getElementById('iframePreviewPDF').src = pdfDataUri;
+                   const btnDownload = document.getElementById('btnDownloadPreviewPDF');
+                   btnDownload.onclick = function() {
+                       const link = document.createElement("a"); link.href = pdfDataUri; link.download = kRes.filename; link.click();
+                   };
+                   document.getElementById('modalPreviewPDF').classList.remove('hidden');
                } else { animatedAlert('success', 'Selesai!', 'Kwitansi WA terkirim.'); }
            } else { Swal.fire('Info', kRes.message, 'info'); }
            closeModalSetoran(); resetBtns(); refreshBackgroundSilent(); 

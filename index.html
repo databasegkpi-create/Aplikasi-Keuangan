@@ -346,9 +346,13 @@
                  <option value="Lainnya">Setoran Lainnya</option>
              </select>
           </div>
+         <!-- Tombol Aksi di History Transfer -->
           <div class="flex flex-col md:flex-row gap-2 w-full xl:w-auto mt-2 xl:mt-0">
-            <div class="relative w-full md:w-64"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryTransfer" oninput="currentPageMutasi=1; renderTabelHistoryTransfer()" placeholder="Cari nama gereja / jenis setoran..." class="w-full py-2 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500 transition-all"></div>
-            <button onclick="cetakPDFHistoryTransfer()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-900 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-print mr-1.5"></i> Cetak PDF</button>
+            <div class="relative w-full md:w-56"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchHistoryTransfer" oninput="currentPageMutasi=1; renderTabelHistoryTransfer()" placeholder="Cari jemaat..." class="w-full py-2 pl-10 pr-4 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500 transition-all"></div>
+            
+            <button onclick="cetakKwitansiMassalLayar()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-indigo-700 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-file-invoice mr-1.5"></i> Download Kuitansi</button>
+            
+            <button onclick="cetakPDFHistoryTransfer()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-900 transition-colors shrink-0 flex items-center justify-center"><i class="fas fa-print mr-1.5"></i> Cetak Tabel PDF</button>
           </div>
         </div>
         
@@ -587,9 +591,11 @@
         </div>
       </div>
       
-      <div class="flex flex-col sm:flex-row gap-3 mt-6">
-        <button type="submit" onclick="document.getElementById('submit_action').value='simpan_saja'" id="btnSimpanSaja" class="w-full sm:w-1/3 bg-slate-100 text-slate-600 p-3.5 rounded-xl font-bold tracking-wide hover:bg-slate-200 transition-all border border-slate-200 text-sm">Simpan Saja</button>
-        <button type="submit" onclick="document.getElementById('submit_action').value='simpan_kirim'" id="btnSimpanKirim" class="w-full sm:w-2/3 bg-brand-600 text-white p-3.5 rounded-xl font-bold tracking-wide hover:bg-brand-700 transition-all shadow-md shadow-brand-500/20 text-sm"><i class="fab fa-whatsapp mr-1.5"></i> Simpan & Kirim WA</button>
+     <!-- UPDATE TOMBOL JADI 3 PILIHAN -->
+      <div class="flex flex-col md:flex-row gap-2 mt-6">
+        <button type="submit" onclick="document.getElementById('submit_action').value='simpan_saja'" id="btnSimpanSaja" class="flex-1 bg-slate-100 text-slate-600 p-3 rounded-xl font-bold hover:bg-slate-200 transition-all border border-slate-200 text-xs">Simpan Data</button>
+        <button type="submit" onclick="document.getElementById('submit_action').value='simpan_cetak'" id="btnSimpanCetak" class="flex-1 bg-indigo-50 border border-indigo-200 text-indigo-700 p-3 rounded-xl font-bold hover:bg-indigo-100 transition-all text-xs"><i class="fas fa-print mr-1"></i> Simpan & Cetak</button>
+        <button type="submit" onclick="document.getElementById('submit_action').value='simpan_kirim'" id="btnSimpanKirim" class="flex-1 bg-brand-600 text-white p-3 rounded-xl font-bold hover:bg-brand-700 transition-all shadow-md shadow-brand-500/20 text-xs"><i class="fab fa-whatsapp mr-1"></i> Simpan & WA</button>
       </div>
     </form>
   </div>
@@ -1433,17 +1439,21 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       renderTabelHistoryTransfer();
   }
 
-  function cetakPDFHistoryTransfer() {
-    if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data mutasi untuk dicetak.', 'warning');
-    let rowsHtml = "", totalSemuaNominal = 0;
-    window.currentFilteredMutasi.forEach(r => { 
-       totalSemuaNominal += r.nominal; 
-       let d = new Date(r.tanggalTransfer); 
-       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : r.tanggalTransfer; 
-       rowsHtml += `<tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fTgl}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${r.namaGereja}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${r.periode}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${r.jenis}</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #10b981; font-weight: bold;">Rp ${r.nominal.toLocaleString('id-ID')}</td></tr>`; 
-    });
-    Swal.fire({ title: 'Menerbitkan PDF Resmi...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    google.script.run.withSuccessHandler(res => { if(res.status) { const l = document.createElement("a"); l.href = `data:application/pdf;base64,${res.data}`; l.download = res.filename; l.click(); Swal.close(); } else Swal.fire('Gagal', res.message, 'error'); }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error')).cetakPDFHistoryServer({ tglMulai: document.getElementById("filterTglMulai").value, tglSelesai: document.getElementById("filterTglSelesai").value, totalSemua: totalSemuaNominal, tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) }, rowsHtml, 'Laporan_History_Transfer.pdf');
+// FUNGSI BARU: Tarik data dari layar yang sedang difilter untuk dicetak massal
+  function cetakKwitansiMassalLayar() {
+    if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Kosong', 'Tidak ada data transfer pada filter saat ini.', 'warning');
+    
+    // Cari transaksi mentah di globalDataSemuaMutasi berdasarkan timestamp yang difilter di layar
+    let uniqueTimestamps = [...new Set(window.currentFilteredMutasi.map(m => m.timestamp_lama))];
+    let rawDataToPrint = globalDataSemuaMutasi.filter(m => uniqueTimestamps.includes(m.timestamp_lama));
+    
+    Swal.fire({ title: 'Merakit Kwitansi Massal...', text: 'Sistem sedang menggabungkan semua kuitansi menjadi 1 file PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run.withSuccessHandler(res => { 
+        if(res.status) { 
+           const link = document.createElement("a"); link.href = `data:application/pdf;base64,${res.data}`; link.download = res.filename; link.click(); Swal.close(); 
+        } else { Swal.fire('Gagal', res.message, 'error'); } 
+    }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error')).cetakKwitansiMassalServer(rawDataToPrint);
   }
 
   // ==========================================
@@ -1840,64 +1850,50 @@ function applyDataToSetoranForm(data) {
   function submitSetoran(e) {
     e.preventDefault(); 
     const formObj = Object.fromEntries(new FormData(e.target).entries());
-
- // ==========================================
-    // FITUR KEAMANAN 1: BLOKIR JIKA TOTAL = 0 & BERSIHKAN TITIK
-    // ==========================================
     let names = ["bakti_bulanan", "pers_2", "amplop_paskah", "amplop_pentakosta", "amplop_hut", "amplop_natal", "setoran_lainnya"];
     let totalNominal = 0;
     names.forEach(n => {
         let val = formObj[n] ? String(formObj[n]).replace(/[^0-9]/g, '') : "0";
-        formObj[n] = val; // KUNCI: Ubah "1.000" menjadi angka murni "1000" sebelum ke server
+        formObj[n] = val; 
         totalNominal += Number(val) || 0;
     });
 
-    // ==========================================
-    // FITUR KEAMANAN 2: CEGAT NAMA GEREJA ILEGAL
-    // ==========================================
-    if(!formObj.id_gereja || formObj.id_gereja === "") {
-        Swal.fire('Gereja Tidak Valid!', 'Silakan ketik, lalu KLIK nama gereja dari daftar dropdown yang muncul.', 'error');
-        return; 
-    }
+    if(!formObj.id_gereja || formObj.id_gereja === "") return Swal.fire('Gereja Tidak Valid!', 'Silakan pilih gereja dari daftar dropdown.', 'error');
 
-    const actionType = document.getElementById("submit_action").value, btnSimpan = document.getElementById("btnSimpanSaja"), btnKirim = document.getElementById("btnSimpanKirim"), oriSimpan = btnSimpan.innerHTML, oriKirim = btnKirim.innerHTML;
-    btnSimpan.disabled = true; btnKirim.disabled = true; actionType === 'simpan_saja' ? btnSimpan.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...' : btnKirim.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
+    const actionType = document.getElementById("submit_action").value;
+    const btnSimpan = document.getElementById("btnSimpanSaja"); const btnCetak = document.getElementById("btnSimpanCetak"); const btnKirim = document.getElementById("btnSimpanKirim");
+    const oriSimpan = btnSimpan.innerHTML; const oriCetak = btnCetak.innerHTML; const oriKirim = btnKirim.innerHTML;
     
+    btnSimpan.disabled = true; btnCetak.disabled = true; btnKirim.disabled = true;
+    if(actionType === 'simpan_saja') btnSimpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    else if(actionType === 'simpan_cetak') btnCetak.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Merakit PDF...';
+    else btnKirim.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+    
+    const resetBtns = () => { btnSimpan.innerHTML=oriSimpan; btnCetak.innerHTML=oriCetak; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnCetak.disabled=false; btnKirim.disabled=false; };
+
     const sHandler = (res) => {
-      if (res && res.status === false) { Swal.fire('Gagal', res.message, 'error'); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; return; }
-      if(actionType === 'simpan_saja') { 
-        animatedAlert('success', 'Tersimpan!', 'Disimpan tanpa WA.'); 
-        closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
-        refreshBackgroundSilent(); 
-      } 
-      else {
-         btnKirim.innerHTML = '<i class="fas fa-paper-plane fa-bounce"></i> Mengirim WA...';
-         google.script.run.withSuccessHandler(kRes => { 
-           kRes.status ? animatedAlert('success', 'Selesai!', 'Kwitansi WA terkirim.') : Swal.fire('Info', kRes.message, 'info'); 
-           closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
-           refreshBackgroundSilent(); 
-         }).withFailureHandler(err => { 
-           Swal.fire('Peringatan', 'WA Sibuk: '+err.message, 'warning'); 
-           closeModalSetoran(); btnSimpan.innerHTML=oriSimpan; btnKirim.innerHTML=oriKirim; btnSimpan.disabled=false; btnKirim.disabled=false; 
-           refreshBackgroundSilent(); 
-         }).buatDanKirimKwitansi(formObj);
+      if (res && res.status === false) { Swal.fire('Gagal', res.message, 'error'); resetBtns(); return; }
+      if (actionType === 'simpan_saja') { 
+        animatedAlert('success', 'Tersimpan!', 'Disimpan tanpa kwitansi.'); closeModalSetoran(); resetBtns(); refreshBackgroundSilent(); 
+      } else {
+        formObj.cetak_saja = (actionType === 'simpan_cetak'); // Berikan penanda khusus ke backend
+        google.script.run.withSuccessHandler(kRes => { 
+           if(kRes.status) {
+               if(formObj.cetak_saja && kRes.base64) {
+                   animatedAlert('success', 'PDF Selesai!', 'Mendownload Kwitansi...');
+                   const link = document.createElement("a"); link.href = `data:application/pdf;base64,${kRes.base64}`; link.download = kRes.filename; link.click();
+               } else { animatedAlert('success', 'Selesai!', 'Kwitansi WA terkirim.'); }
+           } else { Swal.fire('Info', kRes.message, 'info'); }
+           closeModalSetoran(); resetBtns(); refreshBackgroundSilent(); 
+        }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); closeModalSetoran(); resetBtns(); refreshBackgroundSilent(); }).buatDanKirimKwitansi(formObj);
       }
     };
 
-    // ==========================================
-    // FITUR BARU: INTERSEP MODE TRANSFER (DARI EKSTERNAL KE JEMAAT)
-    // ==========================================
-    const extModeEl = document.getElementById("ext_transfer_mode");
-    const isTransferMode = extModeEl ? extModeEl.value === "true" : false;
-
-    if (isTransferMode) {
-       // Jika ini adalah uang dari Non-Jemaat yang dikonversi
-       google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).transferEksternalKeJemaat(formObj);
-    } else {
-       // Jika ini adalah input / edit Jemaat biasa
-       formObj.is_edit === "true" ? google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).updateSetoran(formObj) : google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error');btnSimpan.innerHTML=oriSimpan;btnKirim.innerHTML=oriKirim;btnSimpan.disabled=false;btnKirim.disabled=false;}).simpanData(formObj);
-    }
+    const isTransferMode = document.getElementById("ext_transfer_mode").value === "true";
+    if (isTransferMode) google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error'); resetBtns();}).transferEksternalKeJemaat(formObj);
+    else formObj.is_edit === "true" ? google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error'); resetBtns();}).updateSetoran(formObj) : google.script.run.withSuccessHandler(sHandler).withFailureHandler(err=>{Swal.fire('Error', err.message, 'error'); resetBtns();}).simpanData(formObj);
   }
+  
 function closeModalSetoran() { 
       document.getElementById("modalSetoran").classList.add("hidden"); 
       document.getElementById("formSetoran").reset(); 

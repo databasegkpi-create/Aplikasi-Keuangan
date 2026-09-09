@@ -2737,12 +2737,12 @@ function submitPemLain(e) {
       }).getHistoryPemasukanLain(document.getElementById("filterTahun").value || new Date().getFullYear());
   }
 
-  function renderTabelHistoryPemLain() {
+ function renderTabelHistoryPemLain() {
       const tMulai = document.getElementById("filterTglMulaiPemLain").value, tSelesai = document.getElementById("filterTglSelesaiPemLain").value, search = document.getElementById("searchHistoryPemLain").value.toLowerCase();
       const tbody = document.getElementById("tabelBodyHistoryPemLain"), paginationContainer = document.getElementById("paginationPemLain");
       
       if (!globalSemuaPemLain || globalSemuaPemLain.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400">Belum ada data pemasukan eksternal.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">Belum ada data pemasukan eksternal.</td></tr>';
           if(paginationContainer) paginationContainer.innerHTML = ''; document.getElementById("labelTotalMutasiPemLain").innerText = `Total: 0 Transaksi`; document.getElementById("sumTotalDanaPemLain").innerText = "Rp 0";
           return;
       }
@@ -2759,7 +2759,7 @@ function submitPemLain(e) {
       });
 
       filtered.sort((a, b) => new Date(normalizeDate(b.tanggal)) - new Date(normalizeDate(a.tanggal))); 
-    window.currentFilteredPemLain = filtered;
+      window.currentFilteredPemLain = filtered;
       let totalNominal = 0; filtered.forEach(r => totalNominal += Number(r.jumlah) || 0);
       const totalPages = Math.ceil(filtered.length / itemsPerPagePemLain) || 1;
       if (currentPagePemLain > totalPages) currentPagePemLain = totalPages; if (currentPagePemLain < 1) currentPagePemLain = 1;
@@ -2771,20 +2771,37 @@ function submitPemLain(e) {
          let rawDate = normalizeDate(r.tanggal); let fTgl = rawDate; 
          if(fTgl && fTgl.includes('-')) { let p = fTgl.split('-'); if(p.length === 3 && p[0].length === 4) fTgl = `${p[2]} ${["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][parseInt(p[1],10)-1]} ${p[0]}`; }
          let amanKet = String(r.keterangan).replace(/'/g, "\\'"); let amanJml = Number(r.jumlah) || 0;
+         
+         // PERBAIKAN: Menarik Waktu Input
+         let rawTs = r.timestamp_lama || r.timestamp || r.waktu_input || "";
+         let fWaktuInput = "-";
+         if(rawTs && rawTs !== "undefined") {
+             let dObj = new Date(rawTs);
+             if(!isNaN(dObj.getTime())) {
+                 let dd = String(dObj.getDate()).padStart(2, '0');
+                 let mm = String(dObj.getMonth() + 1).padStart(2, '0');
+                 let yy = dObj.getFullYear();
+                 let hh = String(dObj.getHours()).padStart(2, '0');
+                 let mnt = String(dObj.getMinutes()).padStart(2, '0');
+                 fWaktuInput = `${dd}/${mm}/${yy} ${hh}:${mnt}`;
+             }
+         }
 
          html += `<tr class="hover:bg-slate-50 transition-colors">
+             <td class="text-slate-500 py-3 px-4 border-b text-[10px]"><i class="fas fa-clock text-slate-400 mr-1"></i> ${fWaktuInput}</td>
              <td class="font-bold text-slate-700 py-3 px-4 border-b"><i class="fas fa-calendar-alt text-emerald-500 mr-1.5"></i>${fTgl}</td>
              <td class="font-semibold text-slate-800 py-3 px-4 border-b">${r.keterangan}</td>
              <td class="text-right font-black text-emerald-600 py-3 px-4 border-b">+ Rp ${amanJml.toLocaleString('id-ID')}</td>
-            <td class="text-center py-3 px-4 border-b admin-only">
+             <td class="text-center py-3 px-4 border-b admin-only">
                <button onclick="bukaTransferEksternal('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-indigo-600 p-1 mr-1.5" title="Pindahkan ke Jemaat"><i class="fas fa-exchange-alt"></i></button>
                <button onclick="editPemLain('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-emerald-600 p-1" title="Edit"><i class="fas fa-edit"></i></button>
                <button onclick="hapusPemLain('${rawDate}', '${amanKet}', '${amanJml}')" class="text-slate-400 hover:text-rose-600 p-1 ml-1.5" title="Hapus"><i class="fas fa-trash-alt"></i></button>
              </td>
-           </tr>`;
+            </tr>`;
       });
       
-      tbody.innerHTML = html === "" ? '<tr><td colspan="4" class="p-6 text-center text-rose-400">Tidak ada pemasukan eksternal pada rentang tanggal ini.</td></tr>' : html;
+      // PERBAIKAN: Colspan menjadi 5
+      tbody.innerHTML = html === "" ? '<tr><td colspan="5" class="p-6 text-center text-rose-400">Tidak ada pemasukan eksternal pada rentang tanggal ini.</td></tr>' : html;
       document.getElementById("labelTotalMutasiPemLain").innerText = `Total: ${filtered.length} Transaksi`; document.getElementById("sumTotalDanaPemLain").innerText = "Rp " + totalNominal.toLocaleString('id-ID');
 
       if(paginationContainer) {
@@ -2792,7 +2809,6 @@ function submitPemLain(e) {
           else paginationContainer.innerHTML = `<span class="text-xs text-slate-400 font-medium w-full md:w-auto text-center md:text-left">Menampilkan <b class="text-slate-700">${((currentPagePemLain - 1) * itemsPerPagePemLain) + 1} - ${Math.min(((currentPagePemLain - 1) * itemsPerPagePemLain) + itemsPerPagePemLain, filtered.length)}</b> dari <b class="text-slate-700">${filtered.length}</b> data</span><div class="flex items-center gap-3 w-full md:w-auto justify-center md:justify-end"><button onclick="changePagePemLain(${currentPagePemLain - 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPagePemLain === 1 ? "disabled" : ""}><i class="fas fa-chevron-left mr-1"></i> Prev</button><span class="text-xs text-slate-500 font-semibold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Hal. <strong class="text-emerald-600">${currentPagePemLain}</strong> dari ${totalPages}</span><button onclick="changePagePemLain(${currentPagePemLain + 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all" ${currentPagePemLain === totalPages ? "disabled" : ""}>Next <i class="fas fa-chevron-right ml-1"></i></button></div>`;
       }
   }
-
   function changePagePemLain(newPage) { currentPagePemLain = newPage; renderTabelHistoryPemLain(); }
 
   function bukaTransferEksternal(tgl, ket, jml) {

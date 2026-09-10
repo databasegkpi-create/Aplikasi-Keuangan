@@ -1440,6 +1440,55 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       renderTabelHistoryTransfer();
   }
 
+
+  function cetakPDFHistoryTransfer() {
+    if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data mutasi untuk dicetak.', 'warning');
+    
+    let rowsHtml = "", totalSemuaNominal = 0;
+    window.currentFilteredMutasi.forEach(r => { 
+       totalSemuaNominal += r.nominal; 
+       let d = new Date(r.tanggalTransfer); 
+       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : r.tanggalTransfer; 
+       
+       // Susun baris HTML untuk PDF
+       rowsHtml += `<tr>
+         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fTgl}</td>
+         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${r.namaGereja}</td>
+         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${r.periode}</td>
+         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${r.jenis}</td>
+         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #10b981; font-weight: bold;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
+       </tr>`; 
+    });
+    
+    Swal.fire({ title: 'Merakit Tabel PDF...', text: 'Sistem sedang menyiapkan pratinjau dokumen...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run.withSuccessHandler(res => { 
+        if(res.status) { 
+            Swal.close(); 
+            // TAMPILKAN DI LAYAR PREVIEW
+            const pdfDataUri = `data:application/pdf;base64,${res.data}`;
+            document.getElementById('iframePreviewPDF').src = pdfDataUri;
+            
+            // Pasang aksi tombol Download
+            const btnDownload = document.getElementById('btnDownloadPreviewPDF');
+            btnDownload.onclick = function() {
+                const link = document.createElement("a"); link.href = pdfDataUri; link.download = res.filename; link.click();
+            };
+            
+            // Buka Modal
+            document.getElementById('modalPreviewPDF').classList.remove('hidden');
+        } else { 
+            Swal.fire('Gagal', res.message, 'error'); 
+        } 
+    }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error'))
+    .cetakPDFHistoryServer({ 
+        tglMulai: document.getElementById("filterTglMulai").value, 
+        tglSelesai: document.getElementById("filterTglSelesai").value, 
+        totalSemua: totalSemuaNominal, 
+        tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
+    }, rowsHtml, 'Laporan_History_Transfer.pdf');
+  }
+
 // FUNGSI: Tarik data dari layar untuk dibundel jadi PDF Kuitansi & PREVIEW
   function cetakKwitansiMassalLayar() {
     if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Kosong', 'Tidak ada data transfer pada filter saat ini.', 'warning');

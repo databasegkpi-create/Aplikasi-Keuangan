@@ -924,10 +924,19 @@ function applyRoleUI() {
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+ document.addEventListener("DOMContentLoaded", () => {
     populateTahunDropdown(); 
+    // Atur Tahun Otomatis
     document.getElementById("filterTahun").value = currentYear; document.getElementById("formSetoranTahun").value = currentYear; document.getElementById("rekapTahun").value = currentYear; document.getElementById("filterDirTahun").value = currentYear;
-    document.getElementById("filterTglPemasukan").value = new Date().toLocaleDateString('en-CA'); document.getElementById("filterDirBulan").value = bulanArr[new Date().getMonth()];
+    document.getElementById("filterTglPemasukan").value = new Date().toLocaleDateString('en-CA'); 
+    
+    // ATUR BULAN OTOMATIS MENGIKUTI BULAN SAAT INI (REAL-TIME)
+    const namaBulanSekarang = bulanArr[new Date().getMonth()];
+    if(document.getElementById("filterBulan")) document.getElementById("filterBulan").value = namaBulanSekarang;
+    if(document.getElementById("filterDirBulan")) document.getElementById("filterDirBulan").value = namaBulanSekarang;
+    if(document.getElementById("filterBlnPemasukan")) document.getElementById("filterBlnPemasukan").value = namaBulanSekarang;
+    if(document.getElementById("filterBulanGaji")) document.getElementById("filterBulanGaji").value = namaBulanSekarang;
+
     if(sessionStorage.getItem("logged_in") === "true") { document.getElementById("loginPage").classList.add("hidden"); document.getElementById("mainApp").classList.remove("hidden"); applyRoleUI(); inisialisasiData(); }
   });
 

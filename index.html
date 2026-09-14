@@ -1451,7 +1451,9 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
 
 
  function cetakPDFHistoryTransfer() {
-    if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data mutasi untuk dicetak.', 'warning');
+    if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) {
+        return Swal.fire('Data Kosong', 'Tidak ada data mutasi untuk dicetak.', 'warning');
+    }
     
     let totalSemuaNominal = 0;
     window.currentFilteredMutasi.forEach(r => totalSemuaNominal += r.nominal);
@@ -1463,9 +1465,9 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
         tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})
     };
 
-    Swal.fire({ title: 'Merakit Dokumen PDF...', text: 'Sistem menggambar tabel secara manual...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'Merakit PDF...', text: 'Sistem menggambar tabel presisi...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
-    // KITA KIRIM RAW DATA (window.currentFilteredMutasi) BUKAN HTML
+    // KITA KIRIM DATA ARRAY MENTAH KE SERVER
     google.script.run.withSuccessHandler(res => { 
         if(res.status) { 
             Swal.close(); 

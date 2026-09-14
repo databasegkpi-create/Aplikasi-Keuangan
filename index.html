@@ -1450,42 +1450,22 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
   }
 
 
-  function cetakPDFHistoryTransfer() {
+ function cetakPDFHistoryTransfer() {
     if (!window.currentFilteredMutasi || window.currentFilteredMutasi.length === 0) return Swal.fire('Data Kosong', 'Tidak ada data mutasi untuk dicetak.', 'warning');
     
-    let rowsHtml = "", totalSemuaNominal = 0;
-    window.currentFilteredMutasi.forEach(r => { 
-       totalSemuaNominal += r.nominal; 
-       let d = new Date(r.tanggalTransfer); 
-       let fTgl = !isNaN(d.getTime()) ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : r.tanggalTransfer; 
-       
-       let rawTs = r.timestamp_lama || "";
-       let fWaktuInput = "-";
-       if(rawTs && rawTs !== "undefined") {
-           let dObj = new Date(rawTs);
-           if(!isNaN(dObj.getTime())) {
-               let dd = String(dObj.getDate()).padStart(2, '0');
-               let mm = String(dObj.getMonth() + 1).padStart(2, '0');
-               let yy = dObj.getFullYear();
-               let hh = String(dObj.getHours()).padStart(2, '0');
-               let mnt = String(dObj.getMinutes()).padStart(2, '0');
-               fWaktuInput = `${dd}/${mm}/${yy}<br>${hh}:${mnt}`; // Dibuat 2 baris agar rapi
-           }
-       }
-       
-       // Susun baris HTML 6 Kolom yang Elegan
-       rowsHtml += `<tr>
-         <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; color: #475569;">${fWaktuInput}</td>
-         <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; color: #475569;">${fTgl}</td>
-         <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #1e293b;">${r.namaGereja}</td>
-         <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; color: #475569;">${r.periode}</td>
-         <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; color: #475569;">${r.jenis}</td>
-         <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #10b981; font-weight: bold;">Rp ${r.nominal.toLocaleString('id-ID')}</td>
-       </tr>`; 
-    });
+    let totalSemuaNominal = 0;
+    window.currentFilteredMutasi.forEach(r => totalSemuaNominal += r.nominal);
     
-    Swal.fire({ title: 'Merakit Tabel PDF...', text: 'Sistem sedang menyiapkan pratinjau dokumen...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    let headerData = {
+        tglMulai: document.getElementById("filterTglMulai").value,
+        tglSelesai: document.getElementById("filterTglSelesai").value,
+        totalSemua: totalSemuaNominal,
+        tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})
+    };
+
+    Swal.fire({ title: 'Merakit Dokumen PDF...', text: 'Sistem menggambar tabel secara manual...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
+    // KITA KIRIM RAW DATA (window.currentFilteredMutasi) BUKAN HTML
     google.script.run.withSuccessHandler(res => { 
         if(res.status) { 
             Swal.close(); 
@@ -1502,12 +1482,7 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
             Swal.fire('Gagal', res.message, 'error'); 
         } 
     }).withFailureHandler(err => Swal.fire('Error Koneksi', err.message, 'error'))
-    .cetakPDFHistoryServer({ 
-        tglMulai: document.getElementById("filterTglMulai").value, 
-        tglSelesai: document.getElementById("filterTglSelesai").value, 
-        totalSemua: totalSemuaNominal, 
-        tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
-    }, rowsHtml, 'Laporan_History_Transfer.pdf');
+    .cetakPDFHistoryServer(headerData, window.currentFilteredMutasi, 'Laporan_History_Transfer.pdf');
   }
 
 // FUNGSI: Tarik data dari layar untuk dibundel jadi PDF Kuitansi & PREVIEW

@@ -1776,27 +1776,34 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     }).getInitialSync(bln, thn, filterObj);
   }
 
-// 1. PERBAIKAN FUNGSI EDIT
+// =================================================================
+  // 1. PERBAIKAN FUNGSI EDIT (ANTI ERROR "DATA TIDAK DITEMUKAN")
+  // =================================================================
   function editPemasukanDariHistory(id_gereja, bulan, tahun, timestamp_lama) { 
       let data = null;
       
-      if (timestamp_lama && timestamp_lama !== "undefined") {
-          // KUNCI PERBAIKAN: Cari kombinasi unik agar tidak tertukar dengan gereja lain
-          // yang di-import pada detik yang sama
+      // Bersihkan semua spasi tersembunyi dan jadikan teks seragam
+      let sId = String(id_gereja).trim();
+      let sBln = String(bulan).trim();
+      let sThn = String(tahun).trim();
+      let sTs = String(timestamp_lama).trim();
+
+      // Prioritas 1: Cari dengan perlindungan ketat (termasuk Timestamp)
+      if (sTs && sTs !== "undefined") {
           data = globalDataSemuaMutasi.find(item => 
-              String(item.id) === String(id_gereja) && 
-              item.bulan === bulan && 
-              String(item.tahun) === String(tahun) &&
-              item.timestamp_lama === timestamp_lama
+              String(item.id).trim() === sId && 
+              String(item.bulan).trim() === sBln && 
+              String(item.tahun).trim() === sThn &&
+              String(item.timestamp_lama).trim() === sTs
           );
       }
       
-      // Fallback jika tidak ditemukan
+      // Prioritas 2: Fallback jika Timestamp tidak cocok
       if (!data) {
           data = globalDataSemuaMutasi.find(item => 
-              String(item.id) === String(id_gereja) && 
-              item.bulan === bulan && 
-              String(item.tahun) === String(tahun)
+              String(item.id).trim() === sId && 
+              String(item.bulan).trim() === sBln && 
+              String(item.tahun).trim() === sThn
           ); 
       }
       
@@ -1804,11 +1811,18 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       applyDataToSetoranForm(data); 
   }
 
-  // 2. PERBAIKAN FUNGSI HAPUS LAYAR
+  // =================================================================
+  // 2. PERBAIKAN FUNGSI HAPUS (ANTI ERROR "DATA TIDAK DITEMUKAN")
+  // =================================================================
   function hapusPemasukanDariHistory(id_gereja, bulan, tahun, timestamp_lama) {
+    let sId = String(id_gereja).trim();
+    let sBln = String(bulan).trim();
+    let sThn = String(tahun).trim();
+    let sTs = String(timestamp_lama).trim();
+
     Swal.fire({
       title: 'Hapus Data Setoran?',
-      html: `Anda yakin ingin menghapus setoran bulan <b>${bulan} ${tahun}</b> ini?<br><br><span class="text-xs text-rose-500">Tindakan ini akan menghapus data secara permanen dari database.</span>`,
+      html: `Anda yakin ingin menghapus setoran bulan <b>${sBln} ${sThn}</b> ini?<br><br><span class="text-xs text-rose-500">Tindakan ini akan menghapus data secara permanen dari database.</span>`,
       icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8',
       confirmButtonText: '<i class="fas fa-trash-alt"></i> Ya, Hapus!', cancelButtonText: 'Batal'
     }).then((result) => {
@@ -1819,11 +1833,11 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           if(res.status) { 
             animatedAlert('success', 'Dihapus!', res.message); 
             
-            // KUNCI PERBAIKAN: Hanya hapus baris yang benar-benar cocok identitasnya
-            if (timestamp_lama && timestamp_lama !== "undefined") {
-                globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id) === String(id_gereja) && m.bulan === bulan && String(m.tahun) === String(tahun) && m.timestamp_lama === timestamp_lama));
+            // Hapus dari layar secara instan dengan filter ketat
+            if (sTs && sTs !== "undefined") {
+                globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id).trim() === sId && String(m.bulan).trim() === sBln && String(m.tahun).trim() === sThn && String(m.timestamp_lama).trim() === sTs));
             } else {
-                globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id) === String(id_gereja) && m.bulan === bulan && String(m.tahun) === String(tahun)));
+                globalDataSemuaMutasi = globalDataSemuaMutasi.filter(m => !(String(m.id).trim() === sId && String(m.bulan).trim() === sBln && String(m.tahun).trim() === sThn));
             }
             
             renderTabelHistoryTransfer(); 
@@ -1837,7 +1851,6 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       }
     });
   }
-
   function bukaModalEditGereja() {
     const grj = masterDataGereja.find(g => g.id.toString() === currentGerejaIdModal.toString()); if(!grj) return;
     document.getElementById("edit_id_gereja").value = grj.id; document.getElementById("edit_pendeta").value = grj.pendeta; document.getElementById("edit_bendahara").value = grj.bendahara === "-" ? "" : grj.bendahara; document.getElementById("edit_wa").value = grj.wa; document.getElementById("edit_min_bakti").value = String(grj.min_bakti).replace(/[^0-9]/g, ''); document.getElementById("modalEditGereja").classList.remove("hidden");

@@ -1777,20 +1777,23 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
   }
 
 // =================================================================
-  // 1. PERBAIKAN FUNGSI EDIT (ANTI ERROR "DATA TIDAK DITEMUKAN")
+  // FUNGSI EDIT MUTASI DARI HISTORY (ANTI ERROR & PRESISI 100%)
   // =================================================================
-  function editPemasukanDariHistory(id_gereja, bulan, tahun, timestamp_lama) { 
-      let data = null;
-      
-      // Bersihkan semua spasi tersembunyi dan jadikan teks seragam
-      let sId = String(id_gereja).trim();
-      let sBln = String(bulan).trim();
-      let sThn = String(tahun).trim();
-      let sTs = String(timestamp_lama).trim();
+  function editPemasukanDariHistory(index) { 
+      // 1. Ambil data dari baris yang diklik di layar (Tabel Filter)
+      let dataLayar = window.currentFilteredMutasi[index];
+      if(!dataLayar) return Swal.fire('Error', 'Data tidak ditemukan di layar.', 'error'); 
 
-      // Prioritas 1: Cari dengan perlindungan ketat (termasuk Timestamp)
+      // 2. Siapkan kata kunci pencarian yang ketat
+      let sId = String(dataLayar.id_gereja).trim();
+      let sBln = String(dataLayar.bulan).trim();
+      let sThn = String(dataLayar.tahun).trim();
+      let sTs = String(dataLayar.timestamp_lama).trim();
+
+      // 3. Cari data mentahnya di database global server
+      let dataMentah = null;
       if (sTs && sTs !== "undefined") {
-          data = globalDataSemuaMutasi.find(item => 
+          dataMentah = globalDataSemuaMutasi.find(item => 
               String(item.id).trim() === sId && 
               String(item.bulan).trim() === sBln && 
               String(item.tahun).trim() === sThn &&
@@ -1798,17 +1801,19 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
           );
       }
       
-      // Prioritas 2: Fallback jika Timestamp tidak cocok
-      if (!data) {
-          data = globalDataSemuaMutasi.find(item => 
+      // 4. Fallback jika timestamp tidak ditemukan (untuk data kuno)
+      if (!dataMentah) {
+          dataMentah = globalDataSemuaMutasi.find(item => 
               String(item.id).trim() === sId && 
               String(item.bulan).trim() === sBln && 
               String(item.tahun).trim() === sThn
           ); 
       }
       
-      if(!data) return Swal.fire('Error', 'Data asli tidak ditemukan.', 'error'); 
-      applyDataToSetoranForm(data); 
+      if(!dataMentah) return Swal.fire('Error', 'Data asli tidak ditemukan.', 'error'); 
+      
+      // 5. Lempar data mentah ke Form Setoran untuk di-edit
+      applyDataToSetoranForm(dataMentah); 
   }
 
   // =================================================================

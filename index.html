@@ -1148,11 +1148,30 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
     });
   }
 
+// ==========================================
+  // FUNGSI: KIRIM WA INDIVIDU DARI LIST
+  // ==========================================
   function broadcastWA_List(id, tipe, event, bulanCustom) {
-    if(event) event.stopPropagation(); const gereja = masterDataGereja.find(g => g.id.toString() === id.toString()); if(!gereja) return;
-    const bln = bulanCustom || document.getElementById("filterBulan").value; 
-    let pesan = tipe === 'tunggakan' ? `Syalom,\nMengingatkan laporan keuangan dari ${gereja.nama} bulan ${bln} belum diterima. Mohon diinput. Terima kasih.` : `Syalom,\nTerima kasih, laporan setoran ${gereja.nama} bulan ${bln} telah kami terima dengan baik.`;
-    Swal.fire({ title: tipe==='tunggakan'?"Kirim Peringatan":"Kirim Trims", html: `<textarea id="waMsg" class="w-full p-3 border rounded text-sm" rows="5">${pesan}</textarea>`, showCancelButton: true, confirmButtonText: '<i class="fab fa-whatsapp"></i> Kirim', confirmButtonColor: tipe==='tunggakan'?swalColor:'#10b981', preConfirm: () => document.getElementById('waMsg').value }).then((res) => {
+    if(event) event.stopPropagation(); 
+    const gereja = masterDataGereja.find(g => g.id.toString() === id.toString()); 
+    if(!gereja) return;
+    
+    const bln = bulanCustom || document.getElementById("filterBulan").value || document.getElementById("filterDirBulan").value; 
+    const thn = document.getElementById("filterTahun").value || document.getElementById("filterDirTahun").value || new Date().getFullYear();
+
+    // PERUBAHAN: Template pesan WA sesuai permintaan Anda
+    let pesan = tipe === 'tunggakan' 
+      ? `Syalom Amang/Inang,\nMengingatkan kembali kewajiban Bakti Bulanan dari ${gereja.nama} bulan ${bln} ${thn} belum diterima. Mohon kerjasama nya agar dapat disetorkan. Terima kasih Tuhan Yesus Memberkati.` 
+      : `Syalom,\nTerima kasih, laporan setoran ${gereja.nama} bulan ${bln} ${thn} telah kami terima dengan baik. Tuhan Yesus Memberkati.`;
+      
+    Swal.fire({ 
+      title: tipe === 'tunggakan' ? "Kirim Peringatan" : "Kirim Trims", 
+      html: `<textarea id="waMsg" class="w-full p-3 border rounded text-sm" rows="6">${pesan}</textarea>`, 
+      showCancelButton: true, 
+      confirmButtonText: '<i class="fab fa-whatsapp"></i> Kirim', 
+      confirmButtonColor: tipe === 'tunggakan' ? swalColor : '#10b981', 
+      preConfirm: () => document.getElementById('waMsg').value 
+    }).then((res) => {
       if(res.isConfirmed) {
         if(!gereja.wa || gereja.wa === "-") return Swal.fire('Gagal', 'Nomor WA kosong.', 'error');
         Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });

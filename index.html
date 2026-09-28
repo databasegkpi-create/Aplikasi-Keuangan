@@ -125,7 +125,7 @@
       
       <!-- Sisi Kanan Header (Tombol Aksi Cepat) -->
       <div class="flex items-center gap-2 md:gap-3">
-        <button id="btnRefreshUtama" onclick="refreshDataUtama()" title="Sinkronkan Data" class="w-8 h-8 md:w-auto md:px-4 md:py-2 rounded-full bg-indigo-50 text-brand-600 font-semibold text-[10px] md:text-xs hover:bg-brand-100 transition-all flex items-center justify-center shadow-sm border border-brand-100"><i class="fas fa-sync-alt"></i> <span class="hidden md:inline ml-1.5">Refresh</span></button>
+        <button id="btnRefreshUtama" onclick="" title="Sinkronkan Data" class="w-8 h-8 md:w-auto md:px-4 md:py-2 rounded-full bg-indigo-50 text-brand-600 font-semibold text-[10px] md:text-xs hover:bg-brand-100 transition-all flex items-center justify-center shadow-sm border border-brand-100"><i class="fas fa-sync-alt"></i> <span class="hidden md:inline ml-1.5">Refresh</span></button>
         <button onclick="bukaModalRekap()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"><i class="fas fa-file-pdf md:mr-1.5 text-slate-400"></i> <span class="hidden md:inline">Rekap PDF</span></button>
         <button onclick="bukaModalImport()" class="super-admin-only bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm hover:bg-indigo-100 transition-all"><i class="fas fa-file-import md:mr-1.5"></i> <span class="hidden md:inline">Import CSV</span></button>       
         <button onclick="openModalSetoran()" class="admin-only bg-brand-600 text-white px-4 py-2 rounded-full font-semibold text-[10px] md:text-xs shadow-sm shadow-brand-500/30 hover:bg-brand-700 transition-all"><i class="fas fa-plus md:mr-1.5"></i> <span class="hidden md:inline">Buat Setoran</span></button>
@@ -940,7 +940,50 @@ function applyRoleUI() {
     if(sessionStorage.getItem("logged_in") === "true") { document.getElementById("loginPage").classList.add("hidden"); document.getElementById("mainApp").classList.remove("hidden"); applyRoleUI(); inisialisasiData(); }
   });
 
-  function refreshDataUtama() { inisialisasiData(); }
+  // =================================================================
+  // 1. FUNGSI REFRESH TOMBOL MANUAL (Pojok Kanan Atas)
+  // =================================================================
+  function refreshDataUtama() {
+    showLoader("Menyinkronkan Server...", "Mengambil data real-time terbaru");
+    
+    // Deteksi cerdas: Halaman apa yang sedang dibuka oleh user saat ini?
+    let isTransfer = !document.getElementById('pageHistoryTransfer').classList.contains('hidden');
+    let isPengeluaran = !document.getElementById('pageHistoryPengeluaran').classList.contains('hidden');
+    let isPemLain = !document.getElementById('pageHistoryPemLain').classList.contains('hidden');
+    let isDir = !document.getElementById('pageDirektori').classList.contains('hidden');
+    let isGaji = !document.getElementById('pagePenggajian').classList.contains('hidden');
+    let isLog = !document.getElementById('pageLogAktivitas').classList.contains('hidden');
+
+    // Paksa refresh tabel spesifik di halaman tersebut agar langsung tampil
+    if (isTransfer) inisialisasiHistoryTransfer();
+    if (isPengeluaran) inisialisasiHistoryPengeluaran();
+    if (isPemLain) inisialisasiHistoryPemLain();
+    if (isDir) fetchDataDirektoriLengkap();
+    if (isGaji) muatDataPenggajian();
+    if (isLog) loadLogAktivitasData();
+
+    // Refresh Master Data (Dashboard) di belakang layar
+    const bln = document.getElementById("filterBulan").value, thn = document.getElementById("filterTahun").value;
+    const filterObj = { tipe: document.getElementById("tipePemasukan").value, tglHarian: document.getElementById("filterTglPemasukan").value, blnBulanan: document.getElementById("filterBlnPemasukan").value, tahun: thn, id_gereja: document.getElementById("filterArusKasGereja").value };
+    
+    google.script.run.withSuccessHandler(res => {
+        masterDataGereja = res.gereja;
+        let belumSetor = res.dashboard; 
+        globalBelumSetorIDs = belumSetor.map(i => i.id.toString());
+        
+        document.getElementById("countTotal").innerText = masterDataGereja.length; 
+        document.getElementById("countBelum").innerText = belumSetor.length; 
+        document.getElementById("countSudah").innerText = masterDataGereja.length - belumSetor.length;
+        if (new Date().getDate() > 20 && belumSetor.length > 0) document.getElementById("alertTenggat").classList.remove("hidden"); else document.getElementById("alertTenggat").classList.add("hidden");
+        
+        const tbody = document.getElementById("tabelTunggakan");
+        if(belumSetor.length === 0) tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-emerald-600 font-bold">Semua sudah setor!</td></tr>`;
+        else tbody.innerHTML = belumSetor.map(item => `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center p-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><span class="font-semibold text-sm">${item.nama}</span></div></td><td class="p-4 text-xs">${item.pendeta}<br><span class="text-[9px] text-slate-400 font-bold block uppercase mt-0.5">${item.wilayah}</span></td><td class="p-4 text-right admin-only"><button onclick="broadcastWA('${item.id}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 shadow-sm"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button></td></tr>`).join("");
+        
+        processLaporanData(res.laporan);
+        setTimeout(() => hideLoader(), 500); // Tutup loader utama
+    }).getInitialSync(bln, thn, filterObj);
+  }
   
   function toggleSidebar() {
     const sidebar = document.getElementById("sidebar"), overlay = document.getElementById("mobileOverlay");
@@ -1765,33 +1808,42 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       .cetakPDFArusKasServer(dataHeader, rowsPemasukanHtml, rowsPengeluaranHtml, 'Laporan_Arus_Kas.pdf');
   }
 
-  // ==========================================
-  // SINKRONISASI OTOMATIS (Tanpa Refresh Manual)
-  // ==========================================
  function refreshBackgroundSilent() {
+    // Deteksi cerdas: Halaman apa yang sedang terbuka saat data berubah?
+    let isTransfer = !document.getElementById('pageHistoryTransfer').classList.contains('hidden');
+    let isPengeluaran = !document.getElementById('pageHistoryPengeluaran').classList.contains('hidden');
+    let isPemLain = !document.getElementById('pageHistoryPemLain').classList.contains('hidden');
+    let isDir = !document.getElementById('pageDirektori').classList.contains('hidden');
+    let isGaji = !document.getElementById('pagePenggajian').classList.contains('hidden');
+    let isLog = !document.getElementById('pageLogAktivitas').classList.contains('hidden');
+
+    // Munculkan animasi berputar di TABEL tersebut saja tanpa mengunci seluruh layar
+    if (isTransfer) inisialisasiHistoryTransfer();
+    if (isPengeluaran) inisialisasiHistoryPengeluaran();
+    if (isPemLain) inisialisasiHistoryPemLain();
+    if (isDir) fetchDataDirektoriLengkap();
+    if (isGaji) muatDataPenggajian();
+    if (isLog) loadLogAktivitasData();
+
+    // Segarkan data Dashboard secara diam-diam
     const bln = document.getElementById("filterBulan").value, thn = document.getElementById("filterTahun").value;
     const filterObj = { tipe: document.getElementById("tipePemasukan").value, tglHarian: document.getElementById("filterTglPemasukan").value, blnBulanan: document.getElementById("filterBlnPemasukan").value, tahun: thn, id_gereja: document.getElementById("filterArusKasGereja").value };
-    if(typeof inisialisasiHistoryPemLain === "function" && !document.getElementById('pageHistoryPemLain').classList.contains('hidden')) inisialisasiHistoryPemLain();
+    
     google.script.run.withSuccessHandler(res => {
-      masterDataGereja = res.gereja;
-      let belumSetor = res.dashboard; 
-      globalBelumSetorIDs = belumSetor.map(i => i.id.toString());
-      
-      document.getElementById("countTotal").innerText = masterDataGereja.length; 
-      document.getElementById("countBelum").innerText = belumSetor.length; 
-      document.getElementById("countSudah").innerText = masterDataGereja.length - belumSetor.length;
-      if (new Date().getDate() > 20 && belumSetor.length > 0) document.getElementById("alertTenggat").classList.remove("hidden"); else document.getElementById("alertTenggat").classList.add("hidden");
-      
-      const tbody = document.getElementById("tabelTunggakan");
-      if(belumSetor.length === 0) tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-emerald-600 font-bold">Semua sudah setor!</td></tr>`;
-      else tbody.innerHTML = belumSetor.map(item => `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center p-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><span class="font-semibold text-sm">${item.nama}</span></div></td><td class="p-4 text-xs">${item.pendeta}<br><span class="text-[9px] text-slate-400 font-bold block uppercase mt-0.5">${item.wilayah}</span></td><td class="p-4 text-right admin-only"><button onclick="broadcastWA('${item.id}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 shadow-sm"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button></td></tr>`).join("");
-      
-      processLaporanData(res.laporan);
-      inisialisasiHistoryTransfer();
-      
-      // ---> TAMBAHAN BARU SINKRONISASI PENGELUARAN <---
-      if(typeof inisialisasiHistoryPengeluaran === "function") inisialisasiHistoryPengeluaran();
-
+        masterDataGereja = res.gereja;
+        let belumSetor = res.dashboard; 
+        globalBelumSetorIDs = belumSetor.map(i => i.id.toString());
+        
+        document.getElementById("countTotal").innerText = masterDataGereja.length; 
+        document.getElementById("countBelum").innerText = belumSetor.length; 
+        document.getElementById("countSudah").innerText = masterDataGereja.length - belumSetor.length;
+        if (new Date().getDate() > 20 && belumSetor.length > 0) document.getElementById("alertTenggat").classList.remove("hidden"); else document.getElementById("alertTenggat").classList.add("hidden");
+        
+        const tbody = document.getElementById("tabelTunggakan");
+        if(belumSetor.length === 0) tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-emerald-600 font-bold">Semua sudah setor!</td></tr>`;
+        else tbody.innerHTML = belumSetor.map(item => `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center p-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><span class="font-semibold text-sm">${item.nama}</span></div></td><td class="p-4 text-xs">${item.pendeta}<br><span class="text-[9px] text-slate-400 font-bold block uppercase mt-0.5">${item.wilayah}</span></td><td class="p-4 text-right admin-only"><button onclick="broadcastWA('${item.id}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 shadow-sm"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button></td></tr>`).join("");
+        
+        processLaporanData(res.laporan);
     }).getInitialSync(bln, thn, filterObj);
   }
 

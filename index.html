@@ -1265,8 +1265,44 @@ document.getElementById("rekapWilayah").innerHTML = optRekapWil;
       let badgeNominal = isSudahSetor ? (isSesuai ? `<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[9px] font-bold"><i class="fas fa-thumbs-up mr-1"></i> Tuntas Target</span>` : `<span class="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[9px] font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Kurang Target</span>`) : "";
       let tombolWA = isSudahSetor ? `<button onclick="broadcastWA_List('${item.id}', 'terimakasih', event, '${bulan}')" class="bg-white border border-emerald-200 text-emerald-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-emerald-50 admin-only"><i class="fab fa-whatsapp mr-1"></i> Trims</button>` : `<button onclick="broadcastWA_List('${item.id}', 'tunggakan', event, '${bulan}')" class="bg-white border border-rose-200 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-rose-50 admin-only"><i class="fab fa-whatsapp mr-1"></i> Ingatkan</button>`;
 
-      finalHtml += `<div class="bg-white rounded-2xl border border-slate-200 p-4 hover:border-brand-300 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4" onclick="bukaModalDetail('${item.id}')"><div class="flex items-start gap-4 flex-1 min-w-0"><div class="w-10 h-10 rounded-full bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0 p-1 mt-1"><img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain"></div><div class="flex-1 min-w-0"><h4 class="font-bold text-slate-800 text-sm truncate">${item.nama}</h4><p class="text-[9px] font-bold text-slate-400 uppercase mt-1 truncate">${item.wilayah}</p><div class="flex gap-2 mt-2.5">${badgeStatus} ${badgeNominal}</div></div></div><div class="flex flex-col md:flex-row items-start md:items-center gap-4 border-t border-slate-100 md:border-none pt-3 md:pt-0 shrink-0"><div class="flex flex-col min-w-[120px]"><span class="text-[9px] text-slate-400 uppercase font-bold mb-0.5">Pendeta</span><span class="text-xs font-semibold text-slate-700 truncate max-w-xs">${item.pendeta}</span></div><div class="flex flex-col min-w-[100px]"><span class="text-[9px] text-slate-400 uppercase font-bold mb-0.5">Target Bakti</span><span class="text-xs font-black text-brand-600">Rp ${targetBakti.toLocaleString('id-ID')}</span></div><div class="flex gap-2 w-full justify-end ml-auto mt-2 md:mt-0">${tombolWA}</div></div></div>`;
+      // PERBAIKAN: STRUKTUR GRID PRESISI (ANTI-BERANTAKAN)
+      finalHtml += `
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 hover:border-brand-300 transition-all cursor-pointer relative" onclick="bukaModalDetail('${item.id}')">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              
+              <!-- Bagian 1: Logo & Nama Gereja (Porsi: 5 Kolom) -->
+              <div class="md:col-span-5 flex items-center gap-4 min-w-0">
+                  <div class="w-11 h-11 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 p-1">
+                      <img src="https://lh3.googleusercontent.com/d/1g-FutTprQkPGFSZ94neWMBLWKJEkpGfF" class="w-full h-full object-contain">
+                  </div>
+                  <div class="min-w-0">
+                      <h4 class="font-bold text-slate-800 text-sm truncate">${item.nama}</h4>
+                      <p class="text-[9px] font-bold text-slate-400 uppercase mt-0.5 truncate">Wilayah ${item.wilayah}</p>
+                      <div class="flex gap-2 mt-1.5">${badgeStatus} ${badgeNominal}</div>
+                  </div>
+              </div>
+
+              <!-- Bagian 2: Nama Pendeta (Porsi: 3 Kolom) -->
+              <div class="md:col-span-3 flex flex-col border-t border-slate-100 md:border-none pt-3 md:pt-0">
+                  <span class="text-[9px] text-slate-400 uppercase font-bold mb-0.5">Pendeta / Pimpinan</span>
+                  <span class="text-xs font-semibold text-slate-700 truncate w-full pr-2">${item.pendeta || '-'}</span>
+              </div>
+
+              <!-- Bagian 3: Target Bakti (Porsi: 2 Kolom) -->
+              <div class="md:col-span-2 flex flex-col border-t border-slate-100 md:border-none pt-3 md:pt-0">
+                  <span class="text-[9px] text-slate-400 uppercase font-bold mb-0.5">Target Bakti</span>
+                  <span class="text-xs font-black text-brand-600 truncate">Rp ${targetBakti.toLocaleString('id-ID')}</span>
+              </div>
+
+              <!-- Bagian 4: Tombol WA (Porsi: 2 Kolom, Rata Kanan) -->
+              <div class="md:col-span-2 flex md:justify-end border-t border-slate-100 md:border-none pt-3 md:pt-0">
+                  ${tombolWA}
+              </div>
+
+          </div>
+      </div>`;
     });
+
     document.getElementById("labelTotalFilterGereja").innerText = `Menampilkan Total: ${counterGereja} Gereja`;
     document.getElementById("gridGereja").innerHTML = finalHtml === "" ? '<div class="text-center py-10 text-slate-400">Gereja tidak ditemukan.</div>' : finalHtml;
   }

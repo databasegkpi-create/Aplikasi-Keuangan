@@ -680,7 +680,11 @@
   <div class="w-full max-w-[95%] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style="max-height: 95vh;">
     <div class="px-6 py-4 bg-slate-50 flex flex-col md:flex-row justify-between items-center border-b border-slate-200 gap-3">
       <div class="flex items-center gap-3 w-full md:w-auto"><div class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600"><i class="fas fa-file-excel"></i></div><h3 class="font-bold text-sm text-slate-700 whitespace-nowrap">Rekapitulasi</h3><select id="rekapWilayah" onchange="generateTabelRekap()" class="ml-2 p-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-white"><option value="">-- Wilayah --</option></select><input type="number" id="rekapTahun" onchange="generateTabelRekap()" class="p-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-center w-20 outline-none bg-white"></div>
-      <div class="flex gap-2 w-full md:w-auto justify-end"><button onclick="document.getElementById('modalRekap').classList.add('hidden')" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Tutup</button><button onclick="eksporPDF()" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-brand-700"><i class="fas fa-download mr-1.5"></i> Unduh</button></div>
+     <div class="flex gap-2 w-full md:w-auto justify-end">
+    <button onclick="document.getElementById('modalRekap').classList.add('hidden')" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Tutup</button>
+    <button onclick="eksporExcel()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700"><i class="fas fa-file-excel mr-1.5"></i> Excel</button>
+    <button onclick="eksporPDF()" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-brand-700"><i class="fas fa-file-pdf mr-1.5"></i> PDF</button>
+</div>
     </div>
     <div class="flex-1 overflow-auto p-4 md:p-8 bg-slate-200 flex justify-center" id="pdfPrintAreaContainer">
       <div id="pdfContent" class="bg-white p-6 shadow-sm" style="min-width: 297mm; font-family: Arial, sans-serif;">
@@ -3044,6 +3048,107 @@ function submitPemLain(e) {
         totalSemua: totalSemuaNominal, 
         tanggalCetak: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
     }, rowsHtml, 'Laporan_History_Eksternal.pdf');
+  }
+
+  // ==========================================
+  // FUNGSI EXPORT KE EXCEL (EDITABLE & PER SHEET)
+  // ==========================================
+  function eksporExcel() {
+    const wil = document.getElementById("rekapWilayah").value;
+    const thn = document.getElementById("rekapTahun").value;
+    
+    if(!wil) return Swal.fire('Pilih Wilayah', 'Pilih wilayah sebelum ekspor Excel.', 'warning');
+    
+    Swal.fire({ title: 'Menyusun Excel...', text: 'Sistem merakit data ke format Excel. Mohon tunggu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run.withSuccessHandler(semuaSetoran => {
+        try {
+            const wb = XLSX.utils.book_new();
+            let listWilayah = wil === "semua" 
+                ? [...new Set(masterDataGereja.map(i => i.wilayah))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric: true})) 
+                : [wil];
+            
+            listWilayah.forEach(w => {
+                let aoa = []; // Array of Arrays untuk menampung baris
+                
+                // Baris 1: Judul Laporan
+                aoa.push([`REKAPITULASI LAPORAN KEUANGAN SINODE GKPI TAHUN ${thn} - WILAYAH ${w}`]);
+                aoa.push([""]); // Baris Kosong
+                
+                // Baris 3 & 4: Header Kolom
+                aoa.push(["NO", "RESORT / JEMAAT KHUSUS", "JANUARI", "", "FEBRUARI", "", "MARET", "", "APRIL", "", "AMPLOP PASKAH", "MEI", "", "JUNI", "", "AMPLOP PENTAKOSTA", "JULI", "", "AGUSTUS", "", "AMPLOP HUT", "SEPTEMBER", "", "OKTOBER", "", "NOVEMBER", "", "DESEMBER", "", "AMPLOP NATAL"]);
+                aoa.push(["", "", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", "BAKTI BULANAN", "PERS - II", ""]);
+                
+                const gerejaWilayah = masterDataGereja.filter(g => String(g.wilayah) === String(w));
+                
+                // Looping Isi Data per Gereja
+                gerejaWilayah.forEach((g, index) => {
+                    let rowData = [index + 1, g.nama];
+                    let sumPaskah=0, sumPentakosta=0, sumHut=0, sumNatal=0; 
+                    
+                    semuaSetoran.forEach(x => { 
+                       if(x.id == g.id){
+                          sumPaskah += Number(x.paskah)||0; sumPentakosta += Number(x.pentakosta)||0; sumHut += Number(x.hut)||0; sumNatal += Number(x.natal)||0;
+                       } 
+                    });
+                    
+                    bulanArr.forEach((namaBulan, bIdx) => {
+                        let s = semuaSetoran.find(x => x.id == g.id && x.bulan == namaBulan);
+                        // Ambil Angka Murni agar bisa di-SUM di Excel
+                        let baktiMurni = s && s.bakti ? Number(String(s.bakti).replace(/[^0-9]/g, '')) : 0;
+                        let persMurni = s && s.pers2 ? Number(String(s.pers2).replace(/[^0-9]/g, '')) : 0;
+                        
+                        rowData.push(baktiMurni);
+                        rowData.push(persMurni);
+                        
+                        if (bIdx === 3) rowData.push(sumPaskah);
+                        if (bIdx === 5) rowData.push(sumPentakosta);
+                        if (bIdx === 7) rowData.push(sumHut);
+                    });
+                    rowData.push(sumNatal);
+                    aoa.push(rowData);
+                });
+                
+                let ws = XLSX.utils.aoa_to_sheet(aoa);
+                
+                // Konfigurasi Lebar Kolom
+                ws['!cols'] = [{ wch: 5 }, { wch: 35 }];
+                for(let c = 2; c <= 29; c++) {
+                    if(c === 10 || c === 15 || c === 20 || c === 29) ws['!cols'].push({ wch: 16 });
+                    else ws['!cols'].push({ wch: 14 });
+                }
+
+                // Format Angka ke Ribuan Standar Excel
+                for (let r = 4; r < aoa.length; r++) { 
+                   for (let c = 2; c < 30; c++) {
+                       let cellRef = XLSX.utils.encode_cell({c: c, r: r});
+                       if(ws[cellRef] && ws[cellRef].v !== 0) ws[cellRef].z = "#,##0"; 
+                   }
+                }
+                
+                // Merge Cell untuk Header
+                ws['!merges'] = [
+                    { s: {r:0, c:0}, e: {r:0, c:10} }, // Judul
+                    { s: {r:2, c:0}, e: {r:3, c:0} }, { s: {r:2, c:1}, e: {r:3, c:1} }, // NO & Jemaat
+                    { s: {r:2, c:2}, e: {r:2, c:3} }, { s: {r:2, c:4}, e: {r:2, c:5} }, { s: {r:2, c:6}, e: {r:2, c:7} }, 
+                    { s: {r:2, c:8}, e: {r:2, c:9} }, { s: {r:2, c:10}, e: {r:3, c:10} }, { s: {r:2, c:11}, e: {r:2, c:12} }, 
+                    { s: {r:2, c:13}, e: {r:2, c:14} }, { s: {r:2, c:15}, e: {r:3, c:15} }, { s: {r:2, c:16}, e: {r:2, c:17} }, 
+                    { s: {r:2, c:18}, e: {r:2, c:19} }, { s: {r:2, c:20}, e: {r:3, c:20} }, { s: {r:2, c:21}, e: {r:2, c:22} }, 
+                    { s: {r:2, c:23}, e: {r:2, c:24} }, { s: {r:2, c:25}, e: {r:2, c:26} }, { s: {r:2, c:27}, e: {r:2, c:28} }, 
+                    { s: {r:2, c:29}, e: {r:3, c:29} }
+                ];
+                
+                XLSX.utils.book_append_sheet(wb, ws, "Wilayah " + w);
+            });
+            
+            let filename = wil === "semua" ? `Rekapitulasi_Semua_Wilayah_${thn}.xlsx` : `Rekapitulasi_Wilayah_${wil}_${thn}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            Swal.close();
+            
+        } catch(err) {
+            Swal.fire('Error', 'Gagal merakit Excel: ' + err.message, 'error');
+        }
+    }).getRekapTahunan(thn);
   }
 </script>
 </body>
